@@ -7,21 +7,27 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String    @id @default(uuid())
+  email     String    @unique
   password  String
-  role      Role     @default(STAFF)
-  createdAt DateTime @default(now())
+  role      String    @default("STAFF")
+  createdAt DateTime  @default(now())
+  products  Product[]
   orders    Order[]
 }
 
 model Product {
   id          String      @id @default(uuid())
   name        String
-  price       Decimal
+  description String?     @db.Text
+  price       Decimal     @db.Decimal(10, 2)
   stock       Int
+  category    String      @default("UMUM")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
   orderItems  OrderItem[]
 }
 

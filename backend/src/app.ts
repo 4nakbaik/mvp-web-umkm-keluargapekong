@@ -13,10 +13,12 @@ app.use(helmet()); // Security headers
 app.use(morgan('dev')); // Logger
 
 // Config CORS(penting ni ye buat communicate be-fe)
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+  })
+);
 
 // Routes
 app.use('/api/v1/products', productRoutes);
@@ -26,7 +28,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({
     status: 'error',
-    message: err.message || 'Internal Server Error'
+    message: err.message || 'Internal Server Error',
   });
 });
 
