@@ -1,54 +1,10 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  password  String
-  role      String    @default("STAFF")
-  createdAt DateTime  @default(now())
-  products  Product[]
-  orders    Order[]
-}
-
-model Product {
-  id          String      @id @default(uuid())
-  name        String
-  description String?     @db.Text
-  price       Decimal     @db.Decimal(10, 2)
-  stock       Int
-  category    String      @default("UMUM")
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  userId      String
-  user        User        @relation(fields: [userId], references: [id])
-  orderItems  OrderItem[]
-}
-
-model Order {
-  id        String      @id @default(uuid())
-  userId    String
-  total     Decimal
-  status    OrderStatus @default(PENDING)
-  createdAt DateTime    @default(now())
-  items     OrderItem[]
-  user      User        @relation(fields: [userId], references: [id])
-}
-
-model OrderItem {
-  id        String  @id @default(uuid())
-  orderId   String
-  productId String
-  quantity  Int
-  price     Decimal // Harga pas mulai transaksi 
-  order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -60,4 +16,73 @@ enum OrderStatus {
   PENDING
   PAID
   CANCELLED
+  FAILED
+}
+
+enum Category {
+  MAKANAN
+  MINUMAN
+  SNACK
+  JASA
+  LAINNYA
+}
+
+
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  password  String
+  role      Role      @default(STAFF)
+  address   String?   
+  createdAt DateTime  @default(now())
+  products  Product[]
+  orders    Order[]
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String?
+  address   String?  
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  description String?     @db.Text
+  price       Decimal     @db.Decimal(10, 2)
+  stock       Int
+  category    Category    @default(LAINNYA) 
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  total       Decimal     @db.Decimal(10, 2)
+  status      OrderStatus @default(PENDING) 
+  createdAt   DateTime    @default(now())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  customerId  String?
+  customer    Customer?   @relation(fields: [customerId], references: [id])
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  quantity  Int
+  price     Decimal  @db.Decimal(10, 2)
+
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
 }
