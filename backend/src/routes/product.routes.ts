@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { protect } from '../middlewares/authMiddleware';
+import { protect, adminOnly } from '../middlewares/authMiddleware';
 import {
   getProducts,
   createProduct,
@@ -7,6 +7,7 @@ import {
   updateProduct,
   deleteProduct,
 } from '../controllers/productController';
+import adminOnly = require('../middlewares/authMiddleware');
 
 const router = Router();
 
@@ -14,8 +15,8 @@ router.get('/', protect, getProducts);
 router.get('/:id', protect, getProductById);
 
 // Admin
-router.post('/', protect, createProduct);
-router.put('/:id', protect, updateProduct);
-router.delete('/:id', protect, deleteProduct);
+router.post('/',protect, adminOnly, createProduct);
+router.put('/:id',protect,adminOnly, updateProduct);
+router.delete('/:id',protect, adminOnly, deleteProduct);
 
 export default router;

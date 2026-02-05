@@ -50,16 +50,17 @@ model Customer {
 }
 
 model Product {
-  id          String      @id @default(uuid())
-  name        String
-  description String?     @db.Text
-  price       Decimal     @db.Decimal(10, 2)
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?  @db.Text
+  price       Decimal  @db.Decimal(10, 2)
   stock       Int
-  category    Category    @default(LAINNYA) 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  category    Category @default(LAINNYA)
+  imageUrl    String?  // Sesuai request ye
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   userId      String
-  user        User        @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
   orderItems  OrderItem[]
 }
 

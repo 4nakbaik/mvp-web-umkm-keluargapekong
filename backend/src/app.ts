@@ -6,6 +6,7 @@ import productRoutes from './routes/product.routes';
 import orderRoutes from './routes/order.routes';
 import authRoutes from './routes/auth.routes';
 import customerRoutes from './routes/customer.routes';
+import cors from 'cors';
 
 const app: Application = express();
 
@@ -16,12 +17,14 @@ app.use(helmet()); // Security headers
 app.use(morgan('dev')); // Logger
 
 // Config CORS(penting ni ye buat communicate be-fe)
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: 'http://localhost:5173', // Izinkn Fe Vite
+  credentials: true,               // Izinkan swnd token/cookies
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(express.json());
 
 // Routes
 app.use('/api/v1/auth', authRoutes);

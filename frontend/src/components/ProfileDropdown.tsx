@@ -7,7 +7,7 @@ export default function ProfileDropdown() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuthStore();
 
-  // tutup dropdown saat klik diluat container
+  // t dropdown saat klik diluat container
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -37,7 +37,7 @@ export default function ProfileDropdown() {
         <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
           {avatarLetter}
         </div>
-        <span className="text-gray-700 text-sm font-medium hidden sm:block max-w-[150px] truncate">
+        <span className="text-gray-700 text-sm font-medium hidden sm:block max-w-37.5 truncate">
           {user?.email}
         </span>
         <svg

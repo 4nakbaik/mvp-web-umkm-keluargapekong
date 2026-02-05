@@ -1,12 +1,11 @@
 import { Router } from 'express';
 import { protect } from '../middlewares/authMiddleware';
-import { createCustomer, getCustomers } from '../controllers/customerController';
+import { createCustomer, getCustomers , updateCustomer} from '../controllers/customerController';
 
 const router = Router();
 
-router.use(protect);
-
-router.post('/', createCustomer); 
-router.get('/', getCustomers);    
+router.get('/', protect, getCustomers);
+router.post('/', protect, createCustomer);
+router.put('/:id', protect, updateCustomer); 
 
 export default router;
