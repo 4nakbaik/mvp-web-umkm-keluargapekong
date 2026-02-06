@@ -1,14 +1,44 @@
 import prisma from '../config/database';
 
-// Ubah fungsi createProductService menjadi seperti ini:
+// GET ALL PRODUCTS 
+export const getAllProductsService = async () => {
+  return await prisma.product.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: {
+      user: {
+        select: { name: true, email: true } 
+      }
+    }
+  });
+};
+
+// GET PRODUCT BY ID
+export const getProductByIdService = async (id: string) => {
+  const product = await prisma.product.findUnique({
+    where: { id },
+    include: {
+      user: {
+        select: { name: true }
+      }
+    }
+  });
+
+  if (!product) {
+    throw new Error("Product not found");
+  }
+
+  return product;
+};
+
+// CREATE PRODUCT
 export const createProductService = async (data: any, userId: string) => {
   return await prisma.product.upsert({
-    // 1. Cek, search produk berdasarkn nama
+    // 1. Cek berdasarkan nama 
     where: {
       name: data.name, 
     },
     
-    // 2. Kalo ada, Update datanye (Stok, Harga, Deskripsi, Gambar, etc)
+    // 2. Jika ada, update stok/harga/etc
     update: {
       description: data.description,
       price: data.price,
@@ -17,7 +47,7 @@ export const createProductService = async (data: any, userId: string) => {
       imageUrl: data.imageUrl,
     },
 
-    // 3. Kalo lost, Buat baru (Create)
+    // 3. Jika tdk ada, buat baru
     create: {
       name: data.name,
       description: data.description,
@@ -29,10 +59,8 @@ export const createProductService = async (data: any, userId: string) => {
     },
   });
 };
-
-// UPDATE
+// UPDATE PRODUCT
 export const updateProductService = async (id: string, data: any) => {
-  // Cek eksistensi dulu
   const existing = await prisma.product.findUnique({ where: { id } });
   if (!existing) throw new Error("Product not found");
 
@@ -42,7 +70,7 @@ export const updateProductService = async (id: string, data: any) => {
   });
 };
 
-// DELETE
+// DELETE PRODUCT
 export const deleteProductService = async (id: string) => {
   const existing = await prisma.product.findUnique({ where: { id } });
   if (!existing) throw new Error("Product not found");

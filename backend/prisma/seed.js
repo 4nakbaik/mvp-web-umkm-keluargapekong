@@ -50,14 +50,24 @@ async function main() {
     },
   ];
 
+
   for (const p of products) {
-    const product = await prisma.product.create({
-      data: p,
-    });
-    console.log(`Created Product: ${product.name}`);
+    const product = await prisma.product.upsert({
+      where: { name: p.name }, 
+      update: {},              
+      create: {                
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        stock: p.stock,
+        category: p.category,
+        imageUrl: p.imageUrl,
+        userId: user.id 
+      },
+    })
+    console.log(`Created/Updated product: ${product.name}`)
   }
 
-  console.log('Seeding finished.');
 }
 
 main()

@@ -1,0 +1,13 @@
+<mxfile host="65bd71144e">
+    <diagram id="Dgd7ZOxUA9lK3PtSjP7S" name="Page-1">
+        <mxGraphModel dx="2472" dy="3358" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="6" value="sequenceDiagram&#xa;    autonumber&#xa;    actor Admin&#xa;    participant FE as Frontend (Asoy)&#xa;    participant MW as Middleware (Auth)&#xa;    participant CT as ProductController&#xa;    participant SV as ProductService&#xa;    participant DB as Database &#xa;&#xa;    Note over Admin, DB: Skenario: Admin Input Produk Baru (upsert ye)&#xa;&#xa;    Admin-&gt;&gt;FE: Input Data &amp; Klik &quot;Simpan&quot;&#xa;    FE-&gt;&gt;MW: POST /api/v1/products&#xa;    &#xa;    activate MW&#xa;    MW-&gt;&gt;MW: Verifikasi Token JWT&#xa;    &#xa;    alt Token Invalid / Expired&#xa;        MW--&gt;&gt;FE: 401 Unauthorized&#xa;    else Token Valid&#xa;        MW-&gt;&gt;CT: Forward Request (req.user)&#xa;        deactivate MW&#xa;        &#xa;        activate CT&#xa;        CT-&gt;&gt;CT: Validasi Input (Zod)&#xa;        &#xa;        alt Input Tidak Valid (Typo)&#xa;            CT--&gt;&gt;FE: 400 Bad Request&#xa;        else Input Valid&#xa;            CT-&gt;&gt;SV: createProductService(data, userId)&#xa;            activate SV&#xa;            &#xa;            SV-&gt;&gt;DB: prisma.product.upsert()&#xa;            activate DB&#xa;            Note right of DB: Cek Nama Produk (Unique).&lt;br/&gt;Jika ada: Update Data.&lt;br/&gt;Jika belum: Create Baru.&#xa;            DB--&gt;&gt;SV: Return Data Product&#xa;            deactivate DB&#xa;            &#xa;            SV--&gt;&gt;CT: Return Object&#xa;            deactivate SV&#xa;            &#xa;            CT--&gt;&gt;FE: 201 Created &#xa;            deactivate CT&#xa;            &#xa;            FE--&gt;&gt;Admin: Tampilkan Notifikasi &quot;Sukses&quot;&#xa;        end&#xa;    end" style="shadow=0;dashed=0;align=left;strokeWidth=1;shape=mxgraph.mermaid.abstract.mermaid;labelBackgroundColor=#ffffff;noLabel=1;theme=default;" parent="1" vertex="1">
+                    <mxGeometry x="-70" y="-1130" width="3430" height="1770" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
