@@ -38,7 +38,7 @@ export default function ProfileDropdown() {
           {avatarLetter}
         </div>
         <span className="text-gray-700 text-sm font-medium hidden sm:block max-w-37.5 truncate">
-          {user?.email}
+          {user?.name}
         </span>
         <svg
           className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}

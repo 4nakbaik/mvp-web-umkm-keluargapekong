@@ -5,15 +5,19 @@ interface User {
   id?: string;
   email: string;
   token?: string;
+  role?: 'ADMIN' | 'STAFF';
+  name?: string;
 }
 
 interface AuthState {
   // User state
   user: User | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
 
   // Form state
+  name: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -27,6 +31,7 @@ interface AuthState {
   setEmail: (email: string) => void;
   setPassword: (password: string) => void;
   setConfirmPassword: (confirmPassword: string) => void;
+  setName: (name: string) => void;
 
   // Validation actions
   validatePassword: (password: string) => boolean;
@@ -51,8 +56,10 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
+      isAdmin: false,
       isLoading: false,
 
+      name: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -88,6 +95,7 @@ export const useAuthStore = create<AuthState>()(
           set({ confirmPasswordError: null });
         }
       },
+      setName: (name: string) => set({ name }),
 
       // Validation actions
       validatePassword: (password: string): boolean => {
@@ -121,13 +129,15 @@ export const useAuthStore = create<AuthState>()(
       setGeneralError: (error: string | null) => set({ generalError: error }),
 
       // Auth actions
-      setUser: (user: User | null) => set({ user, isAuthenticated: !!user }),
+      setUser: (user: User | null) =>
+        set({ user, isAuthenticated: !!user, isAdmin: user?.role === 'ADMIN' }),
       setIsLoading: (loading: boolean) => set({ isLoading: loading }),
 
       login: (user: User) => {
         set({
           user,
           isAuthenticated: true,
+          isAdmin: user.role === 'ADMIN',
           email: '',
           password: '',
           confirmPassword: '',
@@ -143,6 +153,8 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: null,
           isAuthenticated: false,
+          isAdmin: false,
+          name: '',
           email: '',
           password: '',
           confirmPassword: '',
@@ -154,6 +166,7 @@ export const useAuthStore = create<AuthState>()(
 
       resetForm: () =>
         set({
+          name: '',
           email: '',
           password: '',
           confirmPassword: '',

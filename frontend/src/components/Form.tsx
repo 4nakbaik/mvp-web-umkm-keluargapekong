@@ -15,6 +15,8 @@ export default function Form({ variant }: FormProps) {
 
   // ambil state dan action dari authStote
   const {
+    name,
+    setName,
     email,
     password,
     confirmPassword,
@@ -33,6 +35,10 @@ export default function Form({ variant }: FormProps) {
     login,
     resetForm,
   } = useAuthStore();
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
+  };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -72,18 +78,21 @@ export default function Form({ variant }: FormProps) {
     try {
       const result = isLogin
         ? await api.login({ email, password })
-        : await api.register({ email, password });
+        : await api.register({ name, email, password });
 
-      if (result.token) {
+      const data = result.data || result;
+
+      if (data.token) {
         // simpan token dan user data ke local
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('user', JSON.stringify(result));
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data));
 
         // Update store dan navigate
         login({
-          id: result.id,
-          email: result.email || email,
-          token: result.token,
+          id: data.id,
+          name: data.name,
+          email: data.email || email,
+          token: data.token,
         });
 
         navigate('/');
@@ -151,6 +160,26 @@ export default function Form({ variant }: FormProps) {
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
+            {!isLogin && (
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={name}
+                  onChange={handleNameChange}
+                  disabled={isLoading}
+                  required
+                  autoComplete="name"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="Your name..."
+                />
+              </div>
+            )}
+
             {generalError && (
               <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg">
                 {generalError}

@@ -2,14 +2,30 @@ import { Routes, Route } from 'react-router-dom';
 import Login from './page/Login';
 import Register from './page/Register';
 import Homepage from './page/Homepage';
+import AdminLogin from './page/admin/AdminLogin';
+import AdminLayout from './components/admin/AdminLayout';
+import Dashboard from './page/admin/Dashboard';
+import Products from './page/admin/Products';
+import Orders from './page/admin/Orders';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
-    <div className="p-2 h-screen">
+    <div className="h-screen">
       <Routes>
         <Route path="/" element={<Homepage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* Admin Routes - Protected dengan double layer security */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route element={<ProtectedRoute requireAdmin redirectTo="/admin/login" />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="products" element={<Products />} />
+            <Route path="orders" element={<Orders />} />
+          </Route>
+        </Route>
       </Routes>
     </div>
   );
