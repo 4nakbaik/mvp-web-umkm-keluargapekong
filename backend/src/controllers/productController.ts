@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthRequest } from '../middlewares/authMiddleware';
 import * as productService from '../services/product.service'; 
 import { createProductSchema, updateProductSchema } from '../validations/product.validation'; 
 
@@ -18,22 +17,42 @@ export const getProductById = async (req: Request, res: Response, next: NextFunc
   try {
     const { id } = req.params;
     const product = await productService.getProductByIdService(id);
+    
+    if (!product) {
+      return res.status(404).json({ status: 'fail', message: 'Product not found' });
+    }
+
     res.status(200).json({ status: 'success', data: product });
   } catch (error) {
-    next(error); // Error  dr service lari kemari
+    next(error);
   }
 };
 
 // 3. CREATE
-export const createProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const validatedData = createProductSchema.parse(req.body);
-    const userId = req.user?.id; // Aman krna pakai AuthReq
-    const product = await productService.createProductService(validatedData, userId);
+    const { name, price, stock, category } = req.body;
+
+    let imageUrl = '';
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+    }
+
+    const payload = {
+      name,
+      category,
+      price: Number(price),
+      stock: Number(stock),
+      imageUrl
+    };
+
+    const validatedData = createProductSchema.parse(payload);
+    const product = await productService.createProductService(validatedData);
 
     res.status(201).json({ status: 'success', data: product });
+
   } catch (error) {
-    next(error); // Error Zod/DB lari kemari
+    next(error);
   }
 };
 
@@ -41,16 +60,25 @@ export const createProduct = async (req: AuthRequest, res: Response, next: NextF
 export const updateProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const validatedData = updateProductSchema.parse(req.body); 
+    const { name, price, stock, category } = req.body;
+    const payload: any = {
+      name,
+      category,
+    };
+
+    if (price) payload.price = Number(price);
+    if (stock) payload.stock = Number(stock);
+    if (req.file) {
+      payload.imageUrl = `/uploads/${req.file.filename}`;
+    }
+
+    const validatedData = updateProductSchema.parse(payload);
     const product = await productService.updateProductService(id, validatedData);
 
     res.status(200).json({ status: 'success', data: product });
   } catch (error: any) {
     if (error.message === 'Product not found') {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'Product not found'
-      });
+      return res.status(404).json({ status: 'fail', message: 'Product not found' });
     }
     next(error); 
   }
@@ -65,10 +93,7 @@ export const deleteProduct = async (req: Request, res: Response, next: NextFunct
     res.status(200).json({ status: 'success', message: 'Product deleted successfully' });
   } catch (error: any) {
     if (error.message === 'Product not found') {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'Product not found'
-      });
+      return res.status(404).json({ status: 'fail', message: 'Product not found' });
     }
     next(error); 
   }

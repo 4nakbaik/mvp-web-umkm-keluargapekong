@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { protect, adminOnly } from '../middlewares/authMiddleware'; 
+import { protect, adminOnly } from '../middlewares/authMiddleware';
+import { upload } from '../middlewares/uploadMiddleware'; // Middleware Multer
 import {
   getProducts,
   createProduct,
@@ -8,16 +9,15 @@ import {
   deleteProduct,
 } from '../controllers/productController';
 
-
 const router = Router();
 
-// Cust/Staff 
-router.get('/', protect, getProducts);
-router.get('/:id', protect, getProductById);
+// --- CUST/STAFF ---
+router.get('/', getProducts);
+router.get('/:id', getProductById);
 
-// Admin 
-router.post('/',protect, adminOnly, createProduct);
-router.put('/:id',protect, adminOnly, updateProduct);
-router.delete('/:id',protect, adminOnly, deleteProduct);
+// --- ADMIN ---
+router.post('/', protect, adminOnly, upload.single('image'), createProduct);
+router.put('/:id', protect, adminOnly, upload.single('image'), updateProduct);
+router.delete('/:id', protect, adminOnly, deleteProduct);
 
 export default router;

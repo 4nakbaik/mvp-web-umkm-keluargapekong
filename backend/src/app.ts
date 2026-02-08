@@ -2,11 +2,13 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'path';
 import productRoutes from './routes/product.routes';
 import orderRoutes from './routes/order.routes';
 import authRoutes from './routes/auth.routes';
 import customerRoutes from './routes/customer.routes';
-import cors from 'cors';
+import dashboardRoutes from './routes/dashboard.routes';
+
 
 const app: Application = express();
 
@@ -25,12 +27,14 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/orders', orderRoutes);
 app.use('/api/v1/customers', customerRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes);
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

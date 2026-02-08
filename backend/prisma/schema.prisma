@@ -68,8 +68,9 @@ model Product {
 
 model Order {
   id          String      @id @default(uuid())
-  total       Decimal     @db.Decimal(10, 2)
-  status      OrderStatus @default(PENDING) 
+  code        String      @unique 
+  totalAmount Decimal     @db.Decimal(10, 2)
+  paymentType String      @default("CASH") // CASH, QRIS, PAYLATER(JANCOQ)
   createdAt   DateTime    @default(now())
   userId      String
   user        User        @relation(fields: [userId], references: [id])
@@ -81,11 +82,9 @@ model Order {
 model OrderItem {
   id        String   @id @default(uuid())
   quantity  Int
-  price     Decimal  @db.Decimal(10, 2)
-
+  price     Decimal  @db.Decimal(10, 2) 
   orderId   String
   order     Order    @relation(fields: [orderId], references: [id])
-  
   productId String
   product   Product  @relation(fields: [productId], references: [id])
 }
