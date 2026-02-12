@@ -82,39 +82,41 @@ export default function Form({ variant }: FormProps) {
 
       const data = result.data || result;
 
-      if (data.token) {
-        // simpan token dan user data ke local
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data));
+      // simpan token dan user data ke local
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data));
 
-        // Update store dan navigate
-        login({
-          id: data.id,
-          name: data.name,
-          email: data.email || email,
-          token: data.token,
-        });
+      // Update store dan navigate
+      login({
+        id: data.id,
+        name: data.name,
+        email: data.email || email,
+        token: data.token,
+        role: data.role,
+      });
 
-        navigate('/');
+      // Redirect berdasarkan role
+      if (data.role === 'STAFF') {
+        navigate('/staff/products');
       } else {
-        // Handle error dari server
-        const defaultError = isLogin ? 'Login gagal' : 'Registrasi gagal';
-        const errorMessage = result.message || defaultError;
-
-        if (
-          errorMessage.toLowerCase().includes('password') ||
-          errorMessage.toLowerCase().includes('invalid') ||
-          errorMessage.toLowerCase().includes('incorrect')
-        ) {
-          setPasswordError(errorMessage);
-        } else if (errorMessage.toLowerCase().includes('email')) {
-          setGeneralError(errorMessage);
-        } else {
-          setGeneralError(errorMessage);
-        }
+        navigate('/');
       }
-    } catch (error) {
-      setGeneralError('Terjadi kesalahan. Silakan coba lagi.');
+    } catch (error: any) {
+      if (error.response) {
+        // Error dari backend (400, 401, 500, dll)
+        const message = error.response.data?.message || 'Login gagal';
+        if (
+          message.toLowerCase().includes('password') ||
+          message.toLowerCase().includes('invalid') ||
+          message.toLowerCase().includes('incorrect')
+        ) {
+          setPasswordError(message);
+        } else {
+          setGeneralError(message);
+        }
+      } else {
+        setGeneralError('Terjadi kesalahan. Silakan coba lagi.');
+      }
       console.error(`${isLogin ? 'Login' : 'Register'} error:`, error);
     } finally {
       setIsLoading(false);

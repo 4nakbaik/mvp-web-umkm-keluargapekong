@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../service/api';
 import ProductForm from '../../components/admin/ProductForm';
+import { activityLogger } from './Dashboard';
 
 interface Product {
   id: string;
@@ -35,22 +36,29 @@ export default function Products() {
     fetchProducts();
   }, []);
 
+  // untuk Delete Product
   const handleDelete = async (id: string) => {
+    const productToDelete = products.find((p) => p.id === id);
     try {
       await api.deleteProduct(id);
       setProducts(products.filter((p) => p.id !== id));
       setDeleteConfirm(null);
+      if (productToDelete) {
+        activityLogger.log('Hapus Produk', `Menghapus produk "${productToDelete.name}"`);
+      }
     } catch (error) {
       console.error('Error deleting product:', error);
     }
   };
 
+  // untuk handle ketika upload data
   const handleFormSuccess = () => {
     setShowForm(false);
     setEditingProduct(null);
     fetchProducts();
   };
 
+  // Format untuk Price
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -59,6 +67,7 @@ export default function Products() {
     }).format(price);
   };
 
+  // Style Icon Category
   const getCategoryBadge = (category: string) => {
     const colors: Record<string, string> = {
       MAKANAN: 'bg-orange-100 text-orange-700',
@@ -71,7 +80,7 @@ export default function Products() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 max-h-screen">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">Produk</h1>
@@ -123,7 +132,8 @@ export default function Products() {
           <h3 className="text-lg font-semibold text-slate-800 mb-2">Belum ada produk</h3>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className='overflow-scroll [overflow-style:none] [scrollbar-width:none]'>
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -251,6 +261,7 @@ export default function Products() {
               </tbody>
             </table>
           </div>
+        </div>
         </div>
       )}
 

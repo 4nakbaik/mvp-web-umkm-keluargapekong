@@ -28,7 +28,6 @@ export default function ProfileDropdown() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-
       {/* Profile Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -53,7 +52,6 @@ export default function ProfileDropdown() {
       {/* Dropdown Menu */}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-
           {/* User Info */}
           <div className="px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-semibold text-gray-900 truncate">{user?.email}</p>
@@ -62,6 +60,24 @@ export default function ProfileDropdown() {
 
           {/* Menu Items */}
           <div className="py-1">
+            {/* Staff Panel Link - only show for Staff */}
+            {user?.role === 'STAFF' && (
+              <Link
+                to="/staff/products"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  />
+                </svg>
+                Staff Panel
+              </Link>
+            )}
             <Link
               to="/profile"
               onClick={() => setIsOpen(false)}

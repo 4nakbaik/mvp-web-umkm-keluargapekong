@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { api } from '../service/api';
+import { Card } from '../components/Card';
 
 interface Product {
   id: string;
@@ -34,9 +35,36 @@ export default function Homepage() {
   }, []);
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <ul>{loading ? '...Loading' : products.map((item) => <li>{item.name}/</li>)}</ul>
+
+      {/* Main Content */}
+      <main className="max-w-full mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Produk Kami</h1>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-lg text-gray-500">Loading...</div>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-lg text-gray-500">Belum ada produk</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-4 gap-6 justify-items-center">
+            {products.map((product) => (
+              <Card
+                key={product.id}
+                name={product.name}
+                description={product.description}
+                price={product.price}
+                imageUrl={product.imageUrl}
+                category={product.category}
+              />
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

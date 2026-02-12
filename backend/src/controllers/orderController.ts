@@ -83,7 +83,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
     });
 
   } catch (error: any) {
-    // Tangkap Error Validasi (dtok/id nye salah)
+    // Tangkap Error Validasi (stok/id nye salah)
     if (error.message.includes('Product') || error.message.includes('Stok')) {
       return res.status(400).json({ status: 'fail', message: error.message });
     }

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from '../../service/api';
+import { activityLogger } from '../../page/admin/Dashboard';
 
 interface Product {
   id: string;
@@ -26,6 +27,7 @@ const CATEGORIES = [
 ];
 
 export default function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
   const [formData, setFormData] = useState({
     name: product?.name || '',
     description: product?.description || '',
@@ -34,11 +36,13 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
     category: product?.category || 'LAINNYA',
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    product?.imageUrl ? `${BACKEND_URL}${product.imageUrl}` : null // Sesuaikan port backend-mu
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const isEditing = !!product;
 
@@ -53,7 +57,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > 2 * 1024 * 1024) {
         setError('Ukuran file maksimal 5MB');
         return;
       }
@@ -66,52 +70,51 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Step 1: Validate and show confirmation
+  const handleSubmitClick = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Validate
+    if (!formData.name.trim()) {
+      setError('Nama produk wajib diisi');
+      return;
+    }
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      setError('Harga harus lebih dari 0');
+      return;
+    }
+    if (!formData.stock || parseInt(formData.stock) < 0) {
+      setError('Stok tidak boleh negatif');
+      return;
+    }
+
+    // Show confirmation dialog
+    setShowConfirm(true);
+  };
+
+  // Step 2: Actually submit after confirmation
+  const handleConfirmSubmit = async () => {
+    setShowConfirm(false);
     setLoading(true);
 
     try {
-      // Validate
-      if (!formData.name.trim()) {
-        throw new Error('Nama produk wajib diisi');
-      }
-      if (!formData.price || parseFloat(formData.price) <= 0) {
-        throw new Error('Harga harus lebih dari 0');
-      }
-      if (!formData.stock || parseInt(formData.stock) < 0) {
-        throw new Error('Stok tidak boleh negatif');
-      }
-
-      const data = new FormData();
-      data.append('name', formData.name.trim());
-      data.append('description', formData.description.trim());
-      data.append('price', formData.price);
-      data.append('stock', formData.stock);
-      data.append('category', formData.category);
-
+      const payload = new FormData();
+      payload.append('name', formData.name.trim());
+      payload.append('description', formData.description);
+      payload.append('price', formData.price);
+      payload.append('stock', formData.stock);
+      payload.append('category', formData.category);
       if (imageFile) {
-        data.append('image', imageFile);
+        payload.append('image', imageFile);
       }
-
-      // For imageUrl when no new image uploaded
-      if (!imageFile && product?.imageUrl) {
-        data.append('imageUrl', product.imageUrl);
-      }
-
-      const payload = {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        price: parseFloat(formData.price), // CONVERT KE NUMBER
-        stock: parseInt(formData.stock, 10), // CONVERT KE NUMBER
-        category: formData.category,
-        imageUrl: imageUrlInput || product?.imageUrl || undefined,
-      };
 
       if (isEditing && product) {
         await api.updateProduct(product.id, payload);
+        activityLogger.log('Edit Produk', `Mengubah produk "${formData.name}"`);
       } else {
         await api.createProduct(payload);
+        activityLogger.log('Tambah Produk', `Menambahkan produk baru "${formData.name}"`);
       }
 
       onSuccess();
@@ -145,7 +148,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmitClick} className="p-6 space-y-5">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
               {error}
@@ -298,6 +301,72 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
           </div>
         </form>
       </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                <svg
+                  className="w-8 h-8 text-blue-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">
+                Konfirmasi {isEditing ? 'Perubahan' : 'Tambah Produk'}
+              </h3>
+              <p className="text-slate-500 mb-6">
+                {isEditing
+                  ? `Apakah Anda yakin ingin menyimpan perubahan pada produk "${formData.name}"?`
+                  : `Apakah Anda yakin ingin menambahkan produk baru "${formData.name}"?`}
+              </p>
+
+              <div className="bg-slate-50 rounded-xl p-4 mb-6 text-left">
+                <p className="text-sm text-slate-600">
+                  <strong>Nama:</strong> {formData.name}
+                </p>
+                <p className="text-sm text-slate-600">
+                  <strong>Harga:</strong> Rp {parseInt(formData.price).toLocaleString('id-ID')}
+                </p>
+                <p className="text-sm text-slate-600">
+                  <strong>Stok:</strong> {formData.stock}
+                </p>
+                <p className="text-sm text-slate-600">
+                  <strong>Kategori:</strong> {formData.category}
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(false)}
+                  className="flex-1 px-4 py-3 border border-slate-300 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmSubmit}
+                  disabled={loading}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-sky-500 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-sky-600 transition-all duration-200 disabled:opacity-50"
+                >
+                  {loading ? 'Menyimpan...' : 'Konfirmasi'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

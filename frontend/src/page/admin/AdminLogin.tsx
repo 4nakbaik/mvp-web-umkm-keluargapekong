@@ -57,8 +57,12 @@ export default function AdminLogin() {
       } else {
         setGeneralError(result.message || 'Login gagal');
       }
-    } catch (error) {
-      setGeneralError('Terjadi kesalahan. Silakan coba lagi.');
+    } catch (error: any) {
+      if (error.response) {
+        setGeneralError(error.response.data?.message || 'Login gagal');
+      } else {
+        setGeneralError('Terjadi kesalahan. Silakan coba lagi.');
+      }
       console.error('Admin login error:', error);
     } finally {
       setIsLoading(false);

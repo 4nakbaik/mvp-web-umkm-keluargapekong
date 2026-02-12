@@ -2,18 +2,17 @@ import { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../hooks/useAuthStore';
 
-export default function AdminLayout() {
+export default function StaffLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAuthenticated, isAdmin, logout } = useAuthStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  // Auth guard - redirect ke login jika tidak autentikasi atau bukan admin
   useEffect(() => {
-    if (!isAuthenticated || !isAdmin) {
-      navigate('/admin/login');
+    if (!isAuthenticated) {
+      navigate('/login');
     }
-  }, [isAuthenticated, isAdmin, navigate]);
+  }, [isAuthenticated, navigate]);
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
@@ -21,34 +20,38 @@ export default function AdminLayout() {
 
   const handleLogoutConfirm = () => {
     logout();
-    navigate('/admin/login');
+    navigate('/login');
   };
 
   const navItems = [
     {
-      path: '/admin/dashboard',
-      label: 'Dashboard',
-      icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
-    },
-    {
-      path: '/admin/products',
+      path: '/staff/products',
       label: 'Produk',
       icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
     },
+    {
+      path: '/staff/orders',
+      label: 'Pesanan',
+      icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
+    },
+    {
+      path: '/staff/membership',
+      label: 'Membership',
+      icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
+    },
   ];
 
-  // Jangan render apapun jika tidak autentikasi atau bukan admin
-  if (!isAuthenticated || !isAdmin) {
+  if (!isAuthenticated) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-slate-100 flex">
       {/* Sidebar */}
-      <aside className="w-70 bg-white  flex flex-col p-2 shadow-sm shadow-gray-400">
-        <div className="p-6 border-b border-slate-700">
-          <h1 className="text-xl font-bold bg-linear-to-r from-blue-400 to-sky-400 bg-clip-text text-transparent">
-            Admin Panel
+      <aside className="w-70 bg-white flex flex-col p-2 shadow-sm shadow-gray-400">
+        <div className="p-6 border-b border-slate-200">
+          <h1 className="text-xl font-bold bg-linear-to-r from-blue-500 to-sky-500 bg-clip-text text-transparent">
+            Staff Panel
           </h1>
           <p className="text-slate-500 text-sm mt-1">Keluarga Pekong</p>
         </div>
@@ -63,8 +66,8 @@ export default function AdminLayout() {
                     to={item.path}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-linear-to-r from-blue-500/20 to-sky-500/20 text-blue-400 border border-blue-500/30'
-                        : 'text-slate-400 hover:text-white hover:bg-blue-500'
+                        ? 'bg-linear-to-r from-blue-500/20 to-sky-500/20 text-blue-600 border border-blue-500/30'
+                        : 'text-slate-500 hover:text-white hover:bg-blue-500'
                     }`}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,19 +86,19 @@ export default function AdminLayout() {
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-slate-700">
-          <div className="flex items-center gap-3 px-4 py-3 text-slate-400">
+        <div className="p-4 border-t border-slate-200">
+          <div className="flex items-center gap-3 px-4 py-3 text-slate-500">
             <div className="w-8 h-8 rounded-full bg-linear-to-br from-blue-400 to-sky-500 flex items-center justify-center text-white text-sm font-medium">
-              {user?.name?.charAt(0) || user?.email?.charAt(0) || 'A'}
+              {user?.name?.charAt(0) || user?.email?.charAt(0) || 'S'}
             </div>
             <div className="flex-1 truncate">
-              <p className="text-sm text-black truncate">{user?.name || 'Admin'}</p>
+              <p className="text-sm text-slate-800 truncate">{user?.name || 'Staff'}</p>
               <p className="text-xs truncate">{user?.email}</p>
             </div>
           </div>
           <button
             onClick={handleLogoutClick}
-            className="w-full mt-2 flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200"
+            className="w-full mt-2 flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -137,7 +140,7 @@ export default function AdminLayout() {
               </div>
               <h3 className="text-xl font-bold text-slate-800 mb-2">Konfirmasi Logout</h3>
               <p className="text-slate-500 mb-6">
-                Apakah Anda yakin ingin keluar dari Admin Panel?
+                Apakah Anda yakin ingin keluar dari Staff Panel?
               </p>
               <div className="flex gap-3">
                 <button

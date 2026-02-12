@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import * as productService from '../services/product.service'; 
-import { createProductSchema, updateProductSchema } from '../validations/product.validation'; 
+import * as productService from '../services/product.service';
+import { createProductSchema, updateProductSchema } from '../validations/product.validation';
 
 // 1. GET ALL
 export const getProducts = async (req: Request, res: Response, next: NextFunction) => {
@@ -17,7 +17,7 @@ export const getProductById = async (req: Request, res: Response, next: NextFunc
   try {
     const { id } = req.params;
     const product = await productService.getProductByIdService(id);
-    
+
     if (!product) {
       return res.status(404).json({ status: 'fail', message: 'Product not found' });
     }
@@ -31,7 +31,8 @@ export const getProductById = async (req: Request, res: Response, next: NextFunc
 // 3. CREATE
 export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, price, stock, category } = req.body;
+    // Iki Tambah description
+    const { name, price, stock, category, description } = req.body;
 
     let imageUrl = '';
     if (req.file) {
@@ -40,17 +41,22 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
 
     const payload = {
       name,
+      // Iki description (Tak Coba ubah)
+      description,
       category,
       price: Number(price),
       stock: Number(stock),
-      imageUrl
+      imageUrl,
     };
 
     const validatedData = createProductSchema.parse(payload);
-    const product = await productService.createProductService(validatedData);
+    
+    // Iki ditambah karena service butuh userId
+    const userId = (req as any).user.id;
+    // IKi ditambah ada userId nya
+    const product = await productService.createProductService(validatedData, userId);
 
     res.status(201).json({ status: 'success', data: product });
-
   } catch (error) {
     next(error);
   }
@@ -80,7 +86,7 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
     if (error.message === 'Product not found') {
       return res.status(404).json({ status: 'fail', message: 'Product not found' });
     }
-    next(error); 
+    next(error);
   }
 };
 
@@ -89,12 +95,12 @@ export const deleteProduct = async (req: Request, res: Response, next: NextFunct
   try {
     const { id } = req.params;
     await productService.deleteProductService(id);
-    
+
     res.status(200).json({ status: 'success', message: 'Product deleted successfully' });
   } catch (error: any) {
     if (error.message === 'Product not found') {
       return res.status(404).json({ status: 'fail', message: 'Product not found' });
     }
-    next(error); 
+    next(error);
   }
 };

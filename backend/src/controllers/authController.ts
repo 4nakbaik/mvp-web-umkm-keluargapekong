@@ -29,13 +29,13 @@ export const register = async (req: Request, res: Response) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 4. Create User 
+    // 4. Create User
     const user = await prisma.user.create({
       data: {
-        name,      
+        name,
         email,
         password: hashedPassword,
-        role: role || 'STAFF' // Default fallback kalo role kosong
+        role: role || 'STAFF', // Default fallback kalo role kosong
       },
     });
 
@@ -43,14 +43,14 @@ export const register = async (req: Request, res: Response) => {
       status: 'success',
       data: {
         id: user.id,
-        name: user.name, 
+        name: user.name,
         email: user.email,
         role: user.role,
         token: generateToken(user.id),
-      }
+      },
     });
-  } catch (error: any) { 
-    console.error("Register Error:", error); 
+  } catch (error: any) {
+    console.error('Register Error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -70,13 +70,13 @@ export const login = async (req: Request, res: Response) => {
     // 3. Return Token
     res.json({
       id: user.id,
-      name: user.name, 
+      name: user.name,
       email: user.email,
       role: user.role,
       token: generateToken(user.id),
     });
   } catch (error) {
-    console.error("Login Error:", error);
+    console.error('Login Error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
