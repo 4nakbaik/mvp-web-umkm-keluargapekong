@@ -15,7 +15,7 @@ export const createCustomerService = async (data: any) => {
   // Cek dupe Email
   if (data.email) {
     const existingEmail = await prisma.customer.findUnique({
-      where: { email: data.email }, // Bisa pakai findUnique karena di schema sudah @unique
+      where: { email: data.email } // Bisa pakai findUnique karena di schema sudah @unique
     });
     if (existingEmail) {
       throw new Error('Email sudah terdaftar');
@@ -27,8 +27,8 @@ export const createCustomerService = async (data: any) => {
       name: data.name,
       phone: data.phone,
       email: data.email, // <--- Masukkan email ke database
-      address: data.address,
-    },
+      address: data.address
+    }
   });
 };
 

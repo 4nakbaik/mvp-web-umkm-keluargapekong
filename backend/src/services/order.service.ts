@@ -41,7 +41,7 @@ export const createOrderService = async (userId: string, data: any) => {
         code: code,
         totalAmount: totalAmount,
         paymentType: data.paymentType,
-        userId: userId, // Staff yg login
+        userId: userId, // <--Staff yg login
         customerId: data.customerId || null,
         items: {
           create: orderItemsData // 
