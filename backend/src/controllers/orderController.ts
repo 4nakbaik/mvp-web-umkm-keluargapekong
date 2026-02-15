@@ -154,7 +154,7 @@ export const getOrderReceipt = async (req: Request, res: Response, next: NextFun
 
       totalAmount: Number(order.totalAmount),
       paymentType: order.paymentType,
-      footerMessage: "Terima Kasih, Datang Lagi Yaaa! :)"
+      footerMessage: "Terima Kasih, Datang Lagi Yaaaa! :)"
     };
 
     res.status(200).json({ status: 'success', data: receiptData });
