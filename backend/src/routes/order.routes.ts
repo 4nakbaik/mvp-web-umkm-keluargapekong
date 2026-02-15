@@ -1,12 +1,13 @@
-import express from 'express';
-import * as orderController from '../controllers/orderController'; 
+import { Router } from 'express'; 
+import { createOrder, getOrders, getOrderReceipt } from '../controllers/orderController'; 
 import { protect, adminOnly, staffOnly } from '../middlewares/authMiddleware';
 
-const router = express.Router();
+const router = Router();
 
-router.use(protect);
+router.use(protect); 
 
-router.post('/', staffOnly, orderController.createOrder);
-router.get('/',adminOnly, orderController.getOrders);
+router.post('/', staffOnly, createOrder); 
+router.get('/', adminOnly, getOrders);    
+router.get('/:id/receipt', staffOnly, getOrderReceipt); 
 
 export default router;

@@ -21,7 +21,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # --- BACKEND ---
+  # --- BE ---
   backend:
     container_name: umkm_backend
     build: 
@@ -42,6 +42,8 @@ services:
       - ./backend/public/uploads:/app/public/uploads:Z
       # - ./backend:/app
       # - /app/node_modules
+
+  # --- FE ---
 
 volumes:
   postgres_data:

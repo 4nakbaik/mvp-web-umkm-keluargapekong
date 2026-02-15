@@ -1,15 +1,13 @@
 import { z } from 'zod';
 
 export const createProductSchema = z.object({
-  name: z.string().min(3, 'Nama produk minimal 3 karakter'),
+  name: z.string().min(3),
   description: z.string().optional(),
-  price: z.number({ invalid_type_error: 'Harga harus angka' }).min(5000, 'Harga minimal 5000'),
-  stock: z.number({ invalid_type_error: 'Stok harus angka' }).min(0, 'Stok tidak boleh minus'),
+  price: z.number().min(5000),
+  stock: z.number().min(0),
   category: z.enum(['MAKANAN', 'MINUMAN', 'SNACK', 'JASA', 'LAINNYA']),
-  imageUrl: z.string().url({ message: 'URL gambar tidak valid' }).optional(), // Ini yang asli
+  imageUrl: z.string().optional().nullable()
 
-  // Iki tak coba buatkan
-  imageUrl: z.string().optional().nullable(),
 });
 
 export const updateProductSchema = createProductSchema.partial();

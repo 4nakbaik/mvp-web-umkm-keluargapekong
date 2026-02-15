@@ -1,67 +1,68 @@
-import prisma from '../config/database';
+import prisma from '../utils/prisma';
 
-export const createOrderService = async (userId: string, data: any) => {
+interface OrderItemInput {
+  productId: string;
+  quantity: number;
+}
+
+export const createOrderService = async (userId: string, items: OrderItemInput[]) => {
   return await prisma.$transaction(async (tx) => {
-    // 1. Hitung Total & Validasi Stok Dlu
     let totalAmount = 0;
-    const orderItemsData = [];
+    
+    // FIX 1: Array kita beri tipe any[] agar tidak error 'never'
+    const orderItemsData: any[] = []; 
 
-    for (const item of data.items) {
-      // Ambil data produk terbaru dari DB
-      const product = await tx.product.findUnique({
-        where: { id: item.productId }
-      });
-
+    for (const item of items) {
+      const product = await tx.product.findUnique({ where: { id: item.productId } });
+      
       if (!product) {
-        throw new Error(`Produk dengan ID ${item.productId} tidak ditemukan`);
+        throw new Error(`Product ${item.productId} not found`);
       }
 
       if (product.stock < item.quantity) {
-        throw new Error(`Stok ${product.name} tidak cukup (Sisa: ${product.stock})`);
+        throw new Error(`Stock habis untuk produk: ${product.name}`);
       }
 
-      // Hitung subtotal
+      // Kurangi Stok
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stock: { decrement: item.quantity } }
+      });
+
+      // Hitung Subtotal
       const subtotal = Number(product.price) * item.quantity;
       totalAmount += subtotal;
 
-      // Siapin data tuk disimpen ke tabel OrderItem
+      // Push ke array
       orderItemsData.push({
         productId: item.productId,
         quantity: item.quantity,
-        price: product.price 
+        price: Number(product.price) // Pastikan number
       });
     }
 
-    // 2. Generate Kode Transaksi
-    const code = `TRX-${Date.now()}`;
+    // FIX 2: Generate Kode Transaksi Unik (Wajib ada!)
+    // Format: TRX-TIMESTAMP-RANDOM (Contoh: TRX-1708123456-999)
+    const transactionCode = `TRX-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    // 3. Simpan Order Utama
-    const newOrder = await tx.order.create({
+    // Buat Order
+    const order = await tx.order.create({
       data: {
-        code: code,
-        totalAmount: totalAmount,
-        paymentType: data.paymentType,
-        userId: userId, // <--Staff yg login
-        customerId: data.customerId || null,
+        code: transactionCode, // <--- INI YANG TADI HILANG (Penyebab Error)
+        userId,
+        totalAmount,
+        paymentType: 'CASH',
         items: {
-          create: orderItemsData // 
+          create: orderItemsData
         }
       },
-      include: { items: true } // Return data sekalian itemsnye
+      include: {
+        items: {
+          include: { product: true }
+        }
+      }
     });
 
-    // 4. Kurangi Stok Produk (Update Stock)
-    for (const item of data.items) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: {
-          stock: {
-            decrement: item.quantity // Kurangi stok otomatis
-          }
-        }
-      });
-    }
-
-    return newOrder;
+    return order;
   });
 };

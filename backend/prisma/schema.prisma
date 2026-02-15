@@ -38,6 +38,7 @@ model User {
   createdAt DateTime  @default(now())
   products  Product[]
   orders    Order[]
+  createdCustomers Customer[] @relation("CustomerRegistrar")
 }
 
 model Customer {
@@ -49,6 +50,8 @@ model Customer {
   isMember  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt @default(now())
+  registeredBy   User?   @relation("CustomerRegistrar", fields: [registeredById], references: [id])
+  registeredById String?
   orders    Order[]
 }
 
@@ -60,6 +63,7 @@ model Product {
   stock       Int
   category    Category @default(LAINNYA)
   imageUrl    String?  // Sesuai request ye
+  imagePath   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      String
