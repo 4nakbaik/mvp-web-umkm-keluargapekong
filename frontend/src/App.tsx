@@ -6,15 +6,18 @@ import AdminLogin from './page/admin/AdminLogin';
 import AdminLayout from './components/admin/AdminLayout';
 import Dashboard from './page/admin/Dashboard';
 import Products from './page/admin/Products';
+import Orders from './page/admin/Orders';
 import ProtectedRoute from './components/ProtectedRoute';
 import StaffLayout from './components/staff/StaffLayout';
 import StaffProducts from './page/staff/StaffProducts';
-import StaffOrders from './page/staff/StaffOrders';
 import StaffMembership from './page/staff/StaffMembership';
+
+import ToastContainer from './components/ToastContainer';
 
 function App() {
   return (
     <div className="h-screen">
+      <ToastContainer />
       <Routes>
         <Route path="/" element={<Homepage />} />
         <Route path="/login" element={<Login />} />
@@ -24,7 +27,6 @@ function App() {
         <Route element={<ProtectedRoute requireStaff redirectTo="/login" />}>
           <Route path="/staff" element={<StaffLayout />}>
             <Route path="products" element={<StaffProducts />} />
-            <Route path="orders" element={<StaffOrders />} />
             <Route path="membership" element={<StaffMembership />} />
           </Route>
         </Route>
@@ -35,6 +37,7 @@ function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="products" element={<Products />} />
+            <Route path="orders" element={<Orders />} />
           </Route>
         </Route>
       </Routes>

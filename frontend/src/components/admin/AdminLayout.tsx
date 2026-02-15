@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks/useAuthStore';
+import Sidebar from '../Sidebar';
 
 export default function AdminLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, isAuthenticated, isAdmin, logout } = useAuthStore();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -35,6 +35,11 @@ export default function AdminLayout() {
       label: 'Produk',
       icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
     },
+    {
+      path: '/admin/orders',
+      label: 'Pesanan',
+      icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+    },
   ];
 
   // Jangan render apapun jika tidak autentikasi atau bukan admin
@@ -43,72 +48,15 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex">
+    <div className="h-screen bg-[#e5e5e8] flex">
       {/* Sidebar */}
-      <aside className="w-70 bg-white  flex flex-col p-2 shadow-sm shadow-gray-400">
-        <div className="p-6 border-b border-slate-700">
-          <h1 className="text-xl font-bold bg-linear-to-r from-blue-400 to-sky-400 bg-clip-text text-transparent">
-            Admin Panel
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">Keluarga Pekong</p>
-        </div>
-
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                      isActive
-                        ? 'bg-linear-to-r from-blue-500/20 to-sky-500/20 text-blue-400 border border-blue-500/30'
-                        : 'text-slate-400 hover:text-white hover:bg-blue-500'
-                    }`}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d={item.icon}
-                      />
-                    </svg>
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        <div className="p-4 border-t border-slate-700">
-          <div className="flex items-center gap-3 px-4 py-3 text-slate-400">
-            <div className="w-8 h-8 rounded-full bg-linear-to-br from-blue-400 to-sky-500 flex items-center justify-center text-white text-sm font-medium">
-              {user?.name?.charAt(0) || user?.email?.charAt(0) || 'A'}
-            </div>
-            <div className="flex-1 truncate">
-              <p className="text-sm text-black truncate">{user?.name || 'Admin'}</p>
-              <p className="text-xs truncate">{user?.email}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogoutClick}
-            className="w-full mt-2 flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-            Logout
-          </button>
-        </div>
-      </aside>
+      <Sidebar
+        navItems={navItems}
+        panelTitle="Admin Panel"
+        user={user}
+        onLogout={handleLogoutClick}
+        variant="admin"
+      />
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
@@ -118,7 +66,7 @@ export default function AdminLayout() {
       {/* Logout Confirmation Dialog */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full mx-4 p-6">
+          <div className="bg-white rounded shadow-2xl max-w-sm w-full mx-4 p-6">
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
                 <svg
@@ -135,20 +83,20 @@ export default function AdminLayout() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Konfirmasi Logout</h3>
-              <p className="text-slate-500 mb-6">
+              <h3 className="text-xl font-bold text-[#1a1a1e] mb-2">Konfirmasi Logout</h3>
+              <p className="text-[#6e6e73] mb-6">
                 Apakah Anda yakin ingin keluar dari Admin Panel?
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowLogoutConfirm(false)}
-                  className="flex-1 px-4 py-3 border border-slate-300 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-[#c8c8cc] text-[#3d3d42] font-medium rounded hover:bg-[#e5e5e8] transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   onClick={handleLogoutConfirm}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white font-semibold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all duration-200"
+                  className="flex-1 px-4 py-3 bg-red-500 text-white font-semibold rounded hover:bg-red-600 transition-all duration-200"
                 >
                   Ya, Logout
                 </button>

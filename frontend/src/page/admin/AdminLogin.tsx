@@ -72,9 +72,9 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full">
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/20">
+        <div className="bg-white/10 backdrop-blur-xl rounded shadow-2xl p-8 border border-white/20">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-br from-blue-400 to-sky-500 rounded-2xl mb-4 shadow-lg">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-br from-blue-400 to-sky-500 rounded mb-4 shadow-lg">
               <svg
                 className="w-8 h-8 text-white"
                 fill="none"
@@ -94,7 +94,7 @@ export default function AdminLogin() {
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             {generalError && (
-              <div className="text-red-400 text-sm text-center bg-red-500/10 p-3 rounded-lg border border-red-500/20">
+              <div className="text-red-400 text-sm text-center bg-red-500/10 p-3 rounded border border-red-500/20">
                 {generalError}
               </div>
             )}
@@ -110,7 +110,7 @@ export default function AdminLogin() {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
                 required
-                className="w-full px-4 py-3 bg-white/5 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-slate-500"
+                className="w-full px-4 py-3 bg-white/5 border border-slate-700 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-slate-500"
                 placeholder="admin@example.com"
               />
             </div>
@@ -126,7 +126,7 @@ export default function AdminLogin() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
                 required
-                className="w-full px-4 py-3 bg-white/5 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-slate-500"
+                className="w-full px-4 py-3 bg-white/5 border border-slate-700 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-slate-500"
                 placeholder="••••••••"
               />
             </div>
@@ -134,7 +134,7 @@ export default function AdminLogin() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 bg-linear-to-r from-blue-500 to-sky-500 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-sky-600 transition-all duration-200 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-linear-to-r from-blue-500 to-sky-500 text-white font-semibold rounded hover:from-blue-600 hover:to-sky-600 transition-all duration-200 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Loading...' : 'Masuk ke Admin Panel'}
             </button>

@@ -38,6 +38,8 @@ export const activityLogger = {
 
 export default function Dashboard() {
   const [totalProducts, setTotalProducts] = useState(0);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [revenue, setRevenue] = useState(0);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,6 +49,22 @@ export default function Dashboard() {
         const productsRes = await api.getProducts();
         const products = productsRes.data || [];
         setTotalProducts(products.length);
+
+        const ordersRes = await api.getOrders();
+        const orders = ordersRes.data || [];
+        setTotalOrders(orders.length);
+
+        const totalRevenue = orders
+          .filter((o: any) => o.status === 'PAID')
+          .reduce((sum: number, o: any) => {
+            const orderTotal =
+              o.total ||
+              (o.items
+                ? o.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0)
+                : 0);
+            return sum + orderTotal;
+          }, 0);
+        setRevenue(totalRevenue);
       } catch (error) {
         console.error('Error fetching stats:', error);
       } finally {
@@ -80,7 +98,7 @@ export default function Dashboard() {
     if (action.includes('Edit') || action.includes('Update')) {
       return {
         icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
-        color: 'text-blue-500 bg-blue-100',
+        color: 'text-[#555559] bg-[#e5e5e8]',
       };
     }
     if (action.includes('Hapus')) {
@@ -97,29 +115,30 @@ export default function Dashboard() {
     }
     return {
       icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-      color: 'text-gray-500 bg-gray-100',
+      color: 'text-[#6e6e73] bg-[#e5e5e8]',
     };
   };
 
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800">Dashboard</h1>
-        <p className="text-slate-500 mt-1">Selamat datang di Admin Panel Keluarga Pekong</p>
+        <h1 className="text-3xl font-bold text-[#1a1a1e]">Dashboard</h1>
+        <p className="text-[#6e6e73] mt-1">Selamat datang di Admin Panel Keluarga Pekong</p>
       </div>
 
-      {/* Stats Card - Only Total Products */}
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-8">
-        <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Total Products */}
+        <div className="bg-white rounded p-6 shadow-sm hover:shadow-md transition-shadow">
           {loading ? (
             <div className="animate-pulse">
-              <div className="h-12 w-12 bg-slate-200 rounded-xl mb-4"></div>
-              <div className="h-8 bg-slate-200 rounded w-16 mb-2"></div>
-              <div className="h-4 bg-slate-200 rounded w-24"></div>
+              <div className="h-12 w-12 bg-[#d8d8dc] rounded mb-4"></div>
+              <div className="h-8 bg-[#d8d8dc] rounded w-16 mb-2"></div>
+              <div className="h-4 bg-[#d8d8dc] rounded w-24"></div>
             </div>
           ) : (
             <>
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl mb-4 shadow-lg">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-[#3d3d42] rounded mb-4 shadow-lg">
                 <svg
                   className="w-6 h-6 text-white"
                   fill="none"
@@ -134,19 +153,88 @@ export default function Dashboard() {
                   />
                 </svg>
               </div>
-              <p className="text-3xl font-bold text-slate-800">{totalProducts}</p>
-              <p className="text-slate-500 mt-1">Total Produk</p>
+              <p className="text-3xl font-bold text-[#1a1a1e]">{totalProducts}</p>
+              <p className="text-[#6e6e73] mt-1">Total Produk</p>
+            </>
+          )}
+        </div>
+
+        {/* Total Orders */}
+        <div className="bg-white rounded p-6 shadow-sm hover:shadow-md transition-shadow">
+          {loading ? (
+            <div className="animate-pulse">
+              <div className="h-12 w-12 bg-[#d8d8dc] rounded mb-4"></div>
+              <div className="h-8 bg-[#d8d8dc] rounded w-16 mb-2"></div>
+              <div className="h-4 bg-[#d8d8dc] rounded w-24"></div>
+            </div>
+          ) : (
+            <>
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-[#2a2a2e] rounded mb-4 shadow-lg">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+              </div>
+              <p className="text-3xl font-bold text-[#1a1a1e]">{totalOrders}</p>
+              <p className="text-[#6e6e73] mt-1">Total Pesanan</p>
+            </>
+          )}
+        </div>
+
+        {/* Revenue */}
+        <div className="bg-white rounded p-6 shadow-sm hover:shadow-md transition-shadow">
+          {loading ? (
+            <div className="animate-pulse">
+              <div className="h-12 w-12 bg-[#d8d8dc] rounded mb-4"></div>
+              <div className="h-8 bg-[#d8d8dc] rounded w-16 mb-2"></div>
+              <div className="h-4 bg-[#d8d8dc] rounded w-24"></div>
+            </div>
+          ) : (
+            <>
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-[#1a1a1e] rounded mb-4 shadow-lg">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <p className="text-3xl font-bold text-[#1a1a1e]">
+                {new Intl.NumberFormat('id-ID', {
+                  style: 'currency',
+                  currency: 'IDR',
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                }).format(revenue)}
+              </p>
+              <p className="text-[#6e6e73] mt-1">Pemasukan</p>
             </>
           )}
         </div>
       </div>
 
       {/* Activity Log */}
-      <div className="bg-white rounded-2xl shadow-sm">
-        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+      <div className="bg-white rounded shadow-sm">
+        <div className="p-6 border-b border-[#e5e5e8] flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-slate-800">Log Aktivitas Admin</h2>
-            <p className="text-sm text-slate-500 mt-1">Riwayat aktivitas yang dilakukan admin</p>
+            <h2 className="text-xl font-semibold text-[#1a1a1e]">Log Aktivitas Admin</h2>
+            <p className="text-sm text-[#6e6e73] mt-1">Riwayat aktivitas yang dilakukan admin</p>
           </div>
           {activityLogs.length > 0 && (
             <button
@@ -154,7 +242,7 @@ export default function Dashboard() {
                 activityLogger.clear();
                 setActivityLogs([]);
               }}
-              className="text-sm text-red-500 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+              className="text-sm text-red-500 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded transition-colors"
             >
               Hapus Semua
             </button>
@@ -165,7 +253,7 @@ export default function Dashboard() {
           {activityLogs.length === 0 ? (
             <div className="text-center py-12">
               <svg
-                className="w-16 h-16 mx-auto text-slate-300 mb-4"
+                className="w-16 h-16 mx-auto text-[#c8c8cc] mb-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -177,8 +265,8 @@ export default function Dashboard() {
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                 />
               </svg>
-              <p className="text-slate-500">Belum ada aktivitas tercatat</p>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-[#6e6e73]">Belum ada aktivitas tercatat</p>
+              <p className="text-sm text-[#9e9ea3] mt-1">
                 Aktivitas akan muncul saat Anda mengelola produk
               </p>
             </div>
@@ -189,9 +277,9 @@ export default function Dashboard() {
                 return (
                   <div
                     key={log.id}
-                    className="flex items-start gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors"
+                    className="flex items-start gap-4 p-3 rounded hover:bg-[#e5e5e8]/50 transition-colors"
                   >
-                    <div className={`p-2 rounded-lg ${color}`}>
+                    <div className={`p-2 rounded ${color}`}>
                       <svg
                         className="w-4 h-4"
                         fill="none"
@@ -207,10 +295,10 @@ export default function Dashboard() {
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-800">{log.action}</p>
-                      <p className="text-sm text-slate-500 truncate">{log.detail}</p>
+                      <p className="font-medium text-[#1a1a1e]">{log.action}</p>
+                      <p className="text-sm text-[#6e6e73] truncate">{log.detail}</p>
                     </div>
-                    <span className="text-xs text-slate-400 whitespace-nowrap">
+                    <span className="text-xs text-[#9e9ea3] whitespace-nowrap">
                       {formatTime(log.timestamp)}
                     </span>
                   </div>

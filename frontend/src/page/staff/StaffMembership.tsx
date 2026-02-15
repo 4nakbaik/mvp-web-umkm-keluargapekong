@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../service/api';
+import { useToastStore } from '../../hooks/useToastStore';
 
 interface Customer {
   id: string;
@@ -25,6 +26,7 @@ const initialFormData: FormData = {
 };
 
 export default function StaffMembership() {
+  const { addToast } = useToastStore();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -76,15 +78,28 @@ export default function StaffMembership() {
     try {
       if (editingCustomer) {
         await api.updateCustomer(formData, editingCustomer.id);
+        addToast('Data member berhasil diperbarui', 'success');
       } else {
         await api.createCustomer({ ...formData, isMember: true });
+        addToast('Member baru berhasil ditambahkan', 'success');
       }
       setShowForm(false);
       setEditingCustomer(null);
       setFormData(initialFormData);
       fetchCustomers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving customer:', error);
+      if (error.response) {
+        if (error.response.status === 409) {
+          addToast('Gagal menyimpan: Data member (email/HP) sudah terdaftar', 'error');
+        } else if (error.response.status >= 500) {
+          addToast('Terjadi kesalahan server. Silakan hubungi developer.', 'error');
+        } else {
+          addToast(error.response.data?.message || 'Terjadi kesalahan saat menyimpan', 'error');
+        }
+      } else {
+        addToast('Terjadi kesalahan koneksi', 'error');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -125,7 +140,7 @@ export default function StaffMembership() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-blue-500 to-sky-500 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-sky-600 transition-all duration-200 shadow-lg shadow-blue-500/25"
+          className="flex items-center gap-2 px-6 py-3 bg-[#5c4033] text-white font-semibold rounded hover:bg-[#4a3329] transition-all duration-200 shadow-lg shadow-[#5c4033]/25"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -135,7 +150,7 @@ export default function StaffMembership() {
       </div>
 
       {loading ? (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded shadow-sm overflow-hidden">
           <div className="animate-pulse p-6 space-y-4">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex items-center gap-4">
@@ -149,7 +164,7 @@ export default function StaffMembership() {
           </div>
         </div>
       ) : customers.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+        <div className="bg-white rounded shadow-sm p-12 text-center">
           <svg
             className="w-16 h-16 mx-auto text-slate-300 mb-4"
             fill="none"
@@ -169,7 +184,7 @@ export default function StaffMembership() {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -196,7 +211,7 @@ export default function StaffMembership() {
                   <tr key={customer.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-400 to-sky-500 flex items-center justify-center text-white font-medium">
+                        <div className="w-10 h-10 rounded-full bg-[#5c4033] flex items-center justify-center text-white font-medium">
                           {customer.name.charAt(0).toUpperCase()}
                         </div>
                         <p className="font-medium text-slate-800">{customer.name}</p>
@@ -216,7 +231,7 @@ export default function StaffMembership() {
                       <div className="flex items-center justify-end">
                         <button
                           onClick={() => handleEdit(customer)}
-                          className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-2 text-[#8d7970] hover:text-[#5c4033] hover:bg-[#ded9d6] rounded transition-colors"
                           title="Edit"
                         >
                           <svg
@@ -246,7 +261,7 @@ export default function StaffMembership() {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+          <div className="bg-white rounded p-6 max-w-md w-full mx-4 shadow-2xl">
             <h3 className="text-lg font-semibold text-slate-800 mb-6">
               {editingCustomer ? 'Edit Member' : 'Tambah Member Baru'}
             </h3>
@@ -260,8 +275,8 @@ export default function StaffMembership() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className={`w-full px-4 py-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.name ? 'border-red-300' : 'border-slate-300'
+                  className={`w-full px-4 py-3 border rounded outline-none focus:ring-2 focus:ring-[#8d7970] ${
+                    errors.name ? 'border-red-300' : 'border-[#cec6c2]'
                   }`}
                   placeholder="Nama lengkap"
                 />
@@ -274,8 +289,8 @@ export default function StaffMembership() {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className={`w-full px-4 py-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.phone ? 'border-red-300' : 'border-slate-300'
+                  className={`w-full px-4 py-3 border rounded outline-none focus:ring-2 focus:ring-[#8d7970] ${
+                    errors.phone ? 'border-red-300' : 'border-[#cec6c2]'
                   }`}
                   placeholder="08xxxxxxxxxx"
                 />
@@ -288,8 +303,8 @@ export default function StaffMembership() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`w-full px-4 py-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.email ? 'border-red-300' : 'border-slate-300'
+                  className={`w-full px-4 py-3 border rounded outline-none focus:ring-2 focus:ring-[#8d7970] ${
+                    errors.email ? 'border-red-300' : 'border-[#cec6c2]'
                   }`}
                   placeholder="email@example.com"
                 />
@@ -301,7 +316,7 @@ export default function StaffMembership() {
                 <textarea
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-4 py-3 border border-[#cec6c2] rounded outline-none focus:ring-2 focus:ring-[#8d7970] resize-none"
                   rows={3}
                   placeholder="Alamat lengkap"
                 />
@@ -311,14 +326,14 @@ export default function StaffMembership() {
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="flex-1 px-4 py-2.5 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors"
+                  className="flex-1 px-4 py-2.5 border border-slate-300 text-slate-700 rounded hover:bg-slate-50 transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-4 py-2.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 bg-[#5c4033] text-white rounded hover:bg-[#4a3329] transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Menyimpan...' : editingCustomer ? 'Update' : 'Simpan'}
                 </button>

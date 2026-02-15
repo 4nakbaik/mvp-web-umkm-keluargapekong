@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../service/api';
 import { useCartStore } from '../../hooks/useCartStore';
+import { useToastStore } from '../../hooks/useToastStore';
 
 interface Product {
   id: string;
@@ -20,6 +21,7 @@ interface Member {
 }
 
 export default function StaffProducts() {
+  const { addToast } = useToastStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCart, setShowCart] = useState(false);
@@ -32,6 +34,8 @@ export default function StaffProducts() {
   const [customerType, setCustomerType] = useState<'member' | 'walkin'>('walkin');
   const [members, setMembers] = useState<Member[]>([]);
   const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [memberSearch, setMemberSearch] = useState('');
+  const [showMemberDropdown, setShowMemberDropdown] = useState(false);
 
   // Walk-in customer form
   const [customerName, setCustomerName] = useState('');
@@ -164,7 +168,7 @@ export default function StaffProducts() {
         </div>
         <button
           onClick={() => setShowCart(true)}
-          className="relative flex items-center gap-2 px-6 py-3 bg-linear-to-r from-blue-500 to-sky-500 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-sky-600 transition-all duration-200 shadow-lg shadow-blue-500/25"
+          className="relative flex items-center gap-2 px-6 py-3 bg-[#5c4033] text-white font-semibold rounded hover:bg-[#4a3329] transition-all duration-200 shadow-lg shadow-[#5c4033]/25"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -185,7 +189,7 @@ export default function StaffProducts() {
 
       {/* Success Message */}
       {orderSuccess && (
-        <div className="mb-6 p-4 bg-blue-100 border border-blue-300 rounded-xl text-blue-700 flex items-center gap-3">
+        <div className="mb-6 p-4 bg-[#ded9d6] border border-[#beb3ad] rounded text-[#5c4033] flex items-center gap-3">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
@@ -199,10 +203,10 @@ export default function StaffProducts() {
           <button
             key={cat.value}
             onClick={() => setCategoryFilter(cat.value)}
-            className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
+            className={`px-4 py-2 rounded font-medium transition-all duration-200 ${
               categoryFilter === cat.value
-                ? 'bg-linear-to-r from-blue-500 to-sky-500 text-white shadow-lg shadow-blue-500/25'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-[#5c4033] text-white shadow-lg shadow-[#5c4033]/25'
+                : 'bg-white text-[#6c5347] hover:bg-[#efeceb] border border-[#cec6c2]'
             }`}
           >
             {cat.label}
@@ -214,8 +218,8 @@ export default function StaffProducts() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl p-4 shadow-sm animate-pulse">
-              <div className="w-full h-40 bg-slate-200 rounded-xl mb-4"></div>
+            <div key={i} className="bg-white rounded p-4 shadow-sm animate-pulse">
+              <div className="w-full h-40 bg-slate-200 rounded mb-4"></div>
               <div className="h-4 bg-slate-200 rounded w-2/3 mb-2"></div>
               <div className="h-3 bg-slate-200 rounded w-1/2"></div>
             </div>
@@ -244,7 +248,7 @@ export default function StaffProducts() {
             filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                className="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow"
               >
                 {product.imageUrl ? (
                   <img
@@ -284,17 +288,21 @@ export default function StaffProducts() {
                     </p>
                   )}
                   <div className="flex items-center justify-between">
-                    <p className="font-bold text-blue-600">{formatPrice(product.price)}</p>
+                    <p className="font-bold text-[#5c4033]">{formatPrice(product.price)}</p>
                     <button
-                      onClick={() =>
-                        addItem({
+                      onClick={() => {
+                        const success = addItem({
                           id: product.id,
                           name: product.name,
                           price: product.price,
                           imageUrl: product.imageUrl,
-                        })
-                      }
-                      className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                          stock: product.stock,
+                        });
+                        if (!success) {
+                          addToast('Stok tidak mencukupi', 'error');
+                        }
+                      }}
+                      className="p-2 bg-[#ded9d6] text-[#5c4033] rounded hover:bg-[#cec6c2] transition-colors"
                     >
                       <svg
                         className="w-5 h-5"
@@ -327,7 +335,7 @@ export default function StaffProducts() {
               <h2 className="text-xl font-bold text-slate-800">Keranjang</h2>
               <button
                 onClick={() => setShowCart(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+                className="p-2 text-slate-400 hover:text-slate-600 rounded hover:bg-slate-100"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -363,16 +371,16 @@ export default function StaffProducts() {
                   {items.map((item) => (
                     <div
                       key={item.productId}
-                      className="flex items-center gap-4 p-3 bg-slate-50 rounded-xl"
+                      className="flex items-center gap-4 p-3 bg-slate-50 rounded"
                     >
                       {item.product.imageUrl ? (
                         <img
                           src={item.product.imageUrl}
                           alt={item.product.name}
-                          className="w-16 h-16 rounded-lg object-cover"
+                          className="w-16 h-16 rounded object-cover"
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded-lg bg-slate-200 flex items-center justify-center">
+                        <div className="w-16 h-16 rounded bg-slate-200 flex items-center justify-center">
                           <svg
                             className="w-6 h-6 text-slate-400"
                             fill="none"
@@ -390,26 +398,31 @@ export default function StaffProducts() {
                       )}
                       <div className="flex-1">
                         <p className="font-medium text-slate-800">{item.product.name}</p>
-                        <p className="text-sm text-blue-600">{formatPrice(item.product.price)}</p>
+                        <p className="text-sm text-[#5c4033]">{formatPrice(item.product.price)}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                          className="w-8 h-8 rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300 flex items-center justify-center"
+                          className="w-8 h-8 rounded bg-slate-200 text-slate-600 hover:bg-slate-300 flex items-center justify-center"
                         >
                           -
                         </button>
                         <span className="w-8 text-center font-medium">{item.quantity}</span>
                         <button
-                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                          className="w-8 h-8 rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300 flex items-center justify-center"
+                          onClick={() => {
+                            const success = updateQuantity(item.productId, item.quantity + 1);
+                            if (!success) {
+                              addToast('Stok tidak mencukupi', 'error');
+                            }
+                          }}
+                          className="w-8 h-8 rounded bg-slate-200 text-slate-600 hover:bg-slate-300 flex items-center justify-center"
                         >
                           +
                         </button>
                       </div>
                       <button
                         onClick={() => removeItem(item.productId)}
-                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
                       >
                         <svg
                           className="w-5 h-5"
@@ -435,7 +448,7 @@ export default function StaffProducts() {
               {/* Customer Type Toggle */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-slate-700">Data Pelanggan</h3>
-                <div className="flex rounded-lg border border-slate-300 overflow-hidden">
+                <div className="flex rounded border border-slate-300 overflow-hidden">
                   <button
                     type="button"
                     onClick={() => {
@@ -444,8 +457,8 @@ export default function StaffProducts() {
                     }}
                     className={`flex-1 py-2 text-sm font-medium transition-colors ${
                       customerType === 'member'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white text-slate-600 hover:bg-slate-50'
+                        ? 'bg-[#5c4033] text-white'
+                        : 'bg-white text-[#6c5347] hover:bg-[#efeceb]'
                     }`}
                   >
                     Member
@@ -458,8 +471,8 @@ export default function StaffProducts() {
                     }}
                     className={`flex-1 py-2 text-sm font-medium transition-colors ${
                       customerType === 'walkin'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white text-slate-600 hover:bg-slate-50'
+                        ? 'bg-[#5c4033] text-white'
+                        : 'bg-white text-[#6c5347] hover:bg-[#efeceb]'
                     }`}
                   >
                     Walk-in
@@ -468,25 +481,132 @@ export default function StaffProducts() {
 
                 {/* Member Dropdown */}
                 {customerType === 'member' ? (
-                  <div>
+                  <div className="relative">
                     <label className="block text-xs text-slate-500 mb-1">
-                      Pilih Member <span className="text-red-500">*</span>
+                      Cari Member <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      value={selectedMemberId}
-                      onChange={(e) => setSelectedMemberId(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-                    >
-                      <option value="">-- Pilih member --</option>
-                      {members.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.name}
-                          {m.phone ? ` (${m.phone})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                    {members.length === 0 && (
-                      <p className="text-xs text-slate-400 mt-1">Belum ada member terdaftar</p>
+                    {selectedMemberId ? (
+                      // Selected member card
+                      (() => {
+                        const selected = members.find((m) => m.id === selectedMemberId);
+                        return selected ? (
+                          <div className="flex items-center justify-between p-3 bg-[#efeceb] border border-[#cec6c2] rounded">
+                            <div>
+                              <p className="font-medium text-slate-800 text-sm">{selected.name}</p>
+                              {selected.phone && (
+                                <p className="text-xs text-slate-500">📱 {selected.phone}</p>
+                              )}
+                              {selected.email && (
+                                <p className="text-xs text-slate-500">✉️ {selected.email}</p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedMemberId('');
+                                setMemberSearch('');
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : null;
+                      })()
+                    ) : (
+                      // Search input + dropdown
+                      <>
+                        <div className="relative">
+                          <svg
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                            />
+                          </svg>
+                          <input
+                            type="text"
+                            value={memberSearch}
+                            onChange={(e) => {
+                              setMemberSearch(e.target.value);
+                              setShowMemberDropdown(true);
+                            }}
+                            onFocus={() => setShowMemberDropdown(true)}
+                            placeholder="Ketik nama, telepon, atau email..."
+                            className="w-full pl-9 pr-3 py-2 border border-[#cec6c2] rounded text-sm focus:ring-2 focus:ring-[#8d7970] focus:border-[#8d7970] outline-none"
+                          />
+                        </div>
+
+                        {showMemberDropdown && (
+                          <>
+                            {/* Backdrop to close dropdown */}
+                            <div
+                              className="fixed inset-0 z-10"
+                              onClick={() => setShowMemberDropdown(false)}
+                            />
+                            <div className="absolute left-0 right-0 mt-1 bg-white border border-[#cec6c2] rounded shadow-lg max-h-48 overflow-auto z-20">
+                              {(() => {
+                                const q = memberSearch.toLowerCase();
+                                const filtered = members.filter(
+                                  (m) =>
+                                    m.name.toLowerCase().includes(q) ||
+                                    (m.phone && m.phone.toLowerCase().includes(q)) ||
+                                    (m.email && m.email.toLowerCase().includes(q))
+                                );
+                                if (filtered.length === 0) {
+                                  return (
+                                    <div className="p-3 text-sm text-slate-400 text-center">
+                                      {members.length === 0
+                                        ? 'Belum ada member terdaftar'
+                                        : 'Member tidak ditemukan'}
+                                    </div>
+                                  );
+                                }
+                                return filtered.map((m) => (
+                                  <button
+                                    key={m.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedMemberId(m.id);
+                                      setMemberSearch('');
+                                      setShowMemberDropdown(false);
+                                    }}
+                                    className="w-full text-left px-3 py-2.5 hover:bg-[#efeceb] transition-colors border-b border-slate-100 last:border-b-0"
+                                  >
+                                    <p className="font-medium text-slate-800 text-sm">{m.name}</p>
+                                    <div className="flex gap-3 mt-0.5">
+                                      {m.phone && (
+                                        <span className="text-xs text-slate-500">📱 {m.phone}</span>
+                                      )}
+                                      {m.email && (
+                                        <span className="text-xs text-slate-500">✉️ {m.email}</span>
+                                      )}
+                                    </div>
+                                  </button>
+                                ));
+                              })()}
+                            </div>
+                          </>
+                        )}
+                      </>
                     )}
                   </div>
                 ) : (
@@ -501,7 +621,7 @@ export default function StaffProducts() {
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
                         placeholder="Nama pelanggan"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        className="w-full px-3 py-2 border border-[#cec6c2] rounded text-sm focus:ring-2 focus:ring-[#8d7970] focus:border-[#8d7970] outline-none"
                       />
                     </div>
                     <div>
@@ -513,7 +633,7 @@ export default function StaffProducts() {
                         value={customerPhone}
                         onChange={(e) => setCustomerPhone(e.target.value)}
                         placeholder="08123456789"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        className="w-full px-3 py-2 border border-[#cec6c2] rounded text-sm focus:ring-2 focus:ring-[#8d7970] focus:border-[#8d7970] outline-none"
                       />
                     </div>
                     <div>
@@ -525,7 +645,7 @@ export default function StaffProducts() {
                         value={customerEmail}
                         onChange={(e) => setCustomerEmail(e.target.value)}
                         placeholder="email@example.com"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        className="w-full px-3 py-2 border border-[#cec6c2] rounded text-sm focus:ring-2 focus:ring-[#8d7970] focus:border-[#8d7970] outline-none"
                       />
                     </div>
                   </>
@@ -534,7 +654,7 @@ export default function StaffProducts() {
 
               {/* Error */}
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-600">
                   {error}
                 </div>
               )}
@@ -553,7 +673,7 @@ export default function StaffProducts() {
                   (customerType === 'walkin' && !customerName.trim()) ||
                   (customerType === 'member' && !selectedMemberId)
                 }
-                className="w-full py-3 bg-linear-to-r from-blue-500 to-sky-500 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-sky-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-[#5c4033] text-white font-semibold rounded hover:bg-[#4a3329] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? 'Memproses...' : 'Buat Pesanan'}
               </button>

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from '../../service/api';
 import { activityLogger } from '../../page/admin/Dashboard';
+import { useToastStore } from '../../hooks/useToastStore';
 
 interface Product {
   id: string;
@@ -28,6 +29,7 @@ const CATEGORIES = [
 
 export default function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+  const { addToast } = useToastStore();
   const [formData, setFormData] = useState({
     name: product?.name || '',
     description: product?.description || '',
@@ -37,7 +39,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(
-    product?.imageUrl ? `${BACKEND_URL}${product.imageUrl}` : null // Sesuaikan port backend-mu
+    product?.imageUrl ? `${BACKEND_URL}${product.imageUrl}` : null
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,6 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
   const isEditing = !!product;
 
   useEffect(() => {
-    // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = 'unset';
@@ -70,12 +71,10 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
     }
   };
 
-  // Step 1: Validate and show confirmation
   const handleSubmitClick = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Validate
     if (!formData.name.trim()) {
       setError('Nama produk wajib diisi');
       return;
@@ -89,11 +88,9 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
       return;
     }
 
-    // Show confirmation dialog
     setShowConfirm(true);
   };
 
-  // Step 2: Actually submit after confirmation
   const handleConfirmSubmit = async () => {
     setShowConfirm(false);
     setLoading(true);
@@ -112,15 +109,27 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
       if (isEditing && product) {
         await api.updateProduct(product.id, payload);
         activityLogger.log('Edit Produk', `Mengubah produk "${formData.name}"`);
+        addToast('Produk berhasil diperbarui', 'success');
       } else {
         await api.createProduct(payload);
         activityLogger.log('Tambah Produk', `Menambahkan produk baru "${formData.name}"`);
+        addToast('Produk berhasil ditambahkan', 'success');
       }
 
       onSuccess();
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan';
-      setError(errorMessage);
+    } catch (err: any) {
+      console.error('Error submitting product:', err);
+      if (err.response) {
+        if (err.response.status === 409) {
+          addToast('Gagal menyimpan: Data produk duplikat', 'error');
+        } else if (err.response.status >= 500) {
+          addToast('Terjadi kesalahan server. Silakan hubungi developer.', 'error');
+        } else {
+          addToast(err.response.data?.message || 'Terjadi kesalahan saat menyimpan', 'error');
+        }
+      } else {
+        addToast('Terjadi kesalahan koneksi', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -128,14 +137,14 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-800">
+      <div className="bg-white rounded shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white px-6 py-4 border-b border-[#e5e5e8] flex items-center justify-between">
+          <h2 className="text-xl font-bold text-[#1a1a1e]">
             {isEditing ? 'Edit Produk' : 'Tambah Produk Baru'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 text-[#9e9ea3] hover:text-[#3d3d42] hover:bg-[#e5e5e8] rounded transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -150,31 +159,31 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
 
         <form onSubmit={handleSubmitClick} className="p-6 space-y-5">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+            <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
               {error}
             </div>
           )}
 
           {/* Image Upload */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Foto Produk</label>
+            <label className="block text-sm font-medium text-[#3d3d42] mb-2">Foto Produk</label>
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center cursor-pointer hover:border-blue-400 transition-colors"
+              className="border-2 border-dashed border-[#c8c8cc] rounded p-4 text-center cursor-pointer hover:border-[#6e6e73] transition-colors"
             >
               {imagePreview ? (
                 <div className="relative">
                   <img
                     src={imagePreview}
                     alt="Preview"
-                    className="w-32 h-32 object-cover rounded-xl mx-auto"
+                    className="w-32 h-32 object-cover rounded mx-auto"
                   />
-                  <p className="text-sm text-slate-500 mt-2">Klik untuk mengganti foto</p>
+                  <p className="text-sm text-[#6e6e73] mt-2">Klik untuk mengganti foto</p>
                 </div>
               ) : (
                 <div className="py-8">
                   <svg
-                    className="w-10 h-10 mx-auto text-slate-400 mb-2"
+                    className="w-10 h-10 mx-auto text-[#9e9ea3] mb-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -186,8 +195,8 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
                       d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
-                  <p className="text-sm text-slate-600">Klik untuk upload foto</p>
-                  <p className="text-xs text-slate-400 mt-1">JPG, PNG, WebP (Max 5MB)</p>
+                  <p className="text-sm text-[#555559]">Klik untuk upload foto</p>
+                  <p className="text-xs text-[#9e9ea3] mt-1">JPG, PNG, WebP (Max 5MB)</p>
                 </div>
               )}
             </div>
@@ -202,7 +211,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
 
           {/* Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="name" className="block text-sm font-medium text-[#3d3d42] mb-2">
               Nama Produk <span className="text-red-500">*</span>
             </label>
             <input
@@ -210,14 +219,14 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              className="w-full px-4 py-3 border border-[#c8c8cc] rounded focus:ring-2 focus:ring-[#6e6e73] focus:border-[#6e6e73] outline-none transition-all"
               placeholder="Nama produk"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-[#3d3d42] mb-2">
               Deskripsi
             </label>
             <textarea
@@ -225,7 +234,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
+              className="w-full px-4 py-3 border border-[#c8c8cc] rounded focus:ring-2 focus:ring-[#6e6e73] focus:border-[#6e6e73] outline-none transition-all resize-none"
               placeholder="Deskripsi produk (opsional)"
             />
           </div>
@@ -233,7 +242,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
           {/* Price and Stock */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="price" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="price" className="block text-sm font-medium text-[#3d3d42] mb-2">
                 Harga (Rp) <span className="text-red-500">*</span>
               </label>
               <input
@@ -243,12 +252,12 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 min="0"
                 step="100"
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className="w-full px-4 py-3 border border-[#c8c8cc] rounded focus:ring-2 focus:ring-[#6e6e73] focus:border-[#6e6e73] outline-none transition-all"
                 placeholder="10000"
               />
             </div>
             <div>
-              <label htmlFor="stock" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="stock" className="block text-sm font-medium text-[#3d3d42] mb-2">
                 Stok <span className="text-red-500">*</span>
               </label>
               <input
@@ -257,7 +266,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
                 value={formData.stock}
                 onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                 min="0"
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className="w-full px-4 py-3 border border-[#c8c8cc] rounded focus:ring-2 focus:ring-[#6e6e73] focus:border-[#6e6e73] outline-none transition-all"
                 placeholder="100"
               />
             </div>
@@ -265,14 +274,14 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
 
           {/* Category */}
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="category" className="block text-sm font-medium text-[#3d3d42] mb-2">
               Kategori
             </label>
             <select
               id="category"
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              className="w-full px-4 py-3 border border-[#c8c8cc] rounded focus:ring-2 focus:ring-[#6e6e73] focus:border-[#6e6e73] outline-none transition-all"
             >
               {CATEGORIES.map((cat) => (
                 <option key={cat.value} value={cat.value}>
@@ -287,14 +296,14 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-slate-300 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors"
+              className="flex-1 px-4 py-3 border border-[#c8c8cc] text-[#3d3d42] font-medium rounded hover:bg-[#e5e5e8] transition-colors"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-3 bg-linear-to-r from-blue-500 to-sky-500 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-sky-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-3 bg-[#2a2a2e] text-white font-semibold rounded hover:bg-[#1a1a1e] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Menyimpan...' : isEditing ? 'Simpan Perubahan' : 'Tambah Produk'}
             </button>
@@ -305,11 +314,11 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
       {/* Confirmation Dialog */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60]">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6">
+          <div className="bg-white rounded shadow-2xl max-w-md w-full mx-4 p-6">
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-[#e5e5e8] rounded-full mb-4">
                 <svg
-                  className="w-8 h-8 text-blue-500"
+                  className="w-8 h-8 text-[#555559]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -322,26 +331,26 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">
+              <h3 className="text-xl font-bold text-[#1a1a1e] mb-2">
                 Konfirmasi {isEditing ? 'Perubahan' : 'Tambah Produk'}
               </h3>
-              <p className="text-slate-500 mb-6">
+              <p className="text-[#6e6e73] mb-6">
                 {isEditing
                   ? `Apakah Anda yakin ingin menyimpan perubahan pada produk "${formData.name}"?`
                   : `Apakah Anda yakin ingin menambahkan produk baru "${formData.name}"?`}
               </p>
 
-              <div className="bg-slate-50 rounded-xl p-4 mb-6 text-left">
-                <p className="text-sm text-slate-600">
+              <div className="bg-[#e5e5e8]/50 rounded p-4 mb-6 text-left">
+                <p className="text-sm text-[#555559]">
                   <strong>Nama:</strong> {formData.name}
                 </p>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-[#555559]">
                   <strong>Harga:</strong> Rp {parseInt(formData.price).toLocaleString('id-ID')}
                 </p>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-[#555559]">
                   <strong>Stok:</strong> {formData.stock}
                 </p>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-[#555559]">
                   <strong>Kategori:</strong> {formData.category}
                 </p>
               </div>
@@ -350,7 +359,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
                 <button
                   type="button"
                   onClick={() => setShowConfirm(false)}
-                  className="flex-1 px-4 py-3 border border-slate-300 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-[#c8c8cc] text-[#3d3d42] font-medium rounded hover:bg-[#e5e5e8] transition-colors"
                 >
                   Batal
                 </button>
@@ -358,7 +367,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
                   type="button"
                   onClick={handleConfirmSubmit}
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-sky-500 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-sky-600 transition-all duration-200 disabled:opacity-50"
+                  className="flex-1 px-4 py-3 bg-[#2a2a2e] text-white font-semibold rounded hover:bg-[#1a1a1e] transition-all duration-200 disabled:opacity-50"
                 >
                   {loading ? 'Menyimpan...' : 'Konfirmasi'}
                 </button>
