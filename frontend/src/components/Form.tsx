@@ -4,6 +4,7 @@ import { api } from '../service/api';
 import { useAuthStore } from '../hooks/useAuthStore';
 import PasswordInvalid from './PasswordInvalid';
 import Button from './Button';
+import Logo from '../assets/Logo.png'
 
 type FormProps = {
   variant: 'register' | 'login';
@@ -82,6 +83,17 @@ export default function Form({ variant }: FormProps) {
 
       const data = result.data || result;
 
+      // Cek apakah user adalah ADMIN
+      if (data.role === 'ADMIN') {
+        // Hapus token dan user dari local storage jika sudah tersimpan (meskipun belum tentu perlu, tapi untuk safety)
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+
+        setGeneralError('Akun Admin mohon login melalui halaman Admin (/admin/login)');
+        setIsLoading(false);
+        return;
+      }
+
       // simpan token dan user data ke local
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data));
@@ -137,34 +149,22 @@ export default function Form({ variant }: FormProps) {
   const linkTo = isLogin ? '/register' : '/login';
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-[#efeceb] flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-400 rounded-xl mb-4">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
+            <div className="p-1 inline-flex items-center justify-center w-15 h-15 bg-[#fff6f1] rounded-xl mb-4 border">
+              <img src={Logo} alt="RM Pekong Logo" className="w-full h-full object-cover" />
             </div>
 
-            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-            <p className="text-gray-600 mt-2">{subtitle}</p>
+            <h2 className="text-2xl font-bold text-[#5c4033]">{title}</h2>
+            <p className="text-[#8d7970] mt-2">{subtitle}</p>
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             {!isLogin && (
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-[#5c4033] mb-2">
                   Name
                 </label>
                 <input
@@ -176,7 +176,7 @@ export default function Form({ variant }: FormProps) {
                   disabled={isLoading}
                   required
                   autoComplete="name"
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 bg-white border border-[#beb3ad] rounded-lg focus:ring-2 focus:ring-[#5c4033] focus:border-[#5c4033] outline-none transition-colors text-[#5c4033] placeholder-[#beb3ad] disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Your name..."
                 />
               </div>
@@ -189,7 +189,7 @@ export default function Form({ variant }: FormProps) {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-[#5c4033] mb-2">
                 Email address
               </label>
               <input
@@ -201,20 +201,20 @@ export default function Form({ variant }: FormProps) {
                 disabled={isLoading}
                 required
                 autoComplete="email"
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-white border border-[#beb3ad] rounded-lg focus:ring-2 focus:ring-[#5c4033] focus:border-[#5c4033] outline-none transition-colors text-[#5c4033] placeholder-[#beb3ad] disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="example123@gmail.com"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-[#5c4033]">
                   Password
                 </label>
                 {isLogin && (
                   <Link
                     to="/forgot-password"
-                    className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                    className="text-sm font-medium text-[#8d7970] hover:text-[#5c4033]"
                   >
                     Forgot password?
                   </Link>
@@ -229,7 +229,7 @@ export default function Form({ variant }: FormProps) {
                 disabled={isLoading}
                 required
                 autoComplete={isLogin ? 'current-password' : 'new-password'}
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-white border border-[#beb3ad] rounded-lg focus:ring-2 focus:ring-[#5c4033] focus:border-[#5c4033] outline-none transition-colors text-[#5c4033] placeholder-[#beb3ad] disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="••••••••"
               />
               {passwordError && <PasswordInvalid message={passwordError} />}
@@ -240,7 +240,7 @@ export default function Form({ variant }: FormProps) {
               <div>
                 <label
                   htmlFor="confirmPassword"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-sm font-medium text-[#5c4033] mb-2"
                 >
                   Confirm Password
                 </label>
@@ -253,7 +253,7 @@ export default function Form({ variant }: FormProps) {
                   disabled={isLoading}
                   required
                   autoComplete="new-password"
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 bg-white border border-[#beb3ad] rounded-lg focus:ring-2 focus:ring-[#5c4033] focus:border-[#5c4033] outline-none transition-colors text-[#5c4033] placeholder-[#beb3ad] disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="••••••••"
                 />
                 {confirmPasswordError && <PasswordInvalid message={confirmPasswordError} />}
@@ -263,14 +263,14 @@ export default function Form({ variant }: FormProps) {
             <Button
               type="submit"
               text={isLoading ? 'Loading...' : buttonText}
-              variant="formSubmit"
+              variant="staffSubmit"
               disabled={isLoading}
             />
           </form>
 
-          <p className="text-center text-sm text-gray-600 mt-6">
+          <p className="text-center text-sm text-[#8d7970] mt-6">
             {linkText}{' '}
-            <Link to={linkTo} className="font-medium text-blue-600 hover:text-blue-500">
+            <Link to={linkTo} className="font-medium text-[#5c4033] hover:text-[#7a5e51]">
               {linkLabel}
             </Link>
           </p>

@@ -1,6 +1,13 @@
 type ButtonProps = {
   text: string;
-  variant?: 'login' | 'register' | 'submitLogin' | 'submitRegister' | 'formSubmit';
+  variant?:
+    | 'login'
+    | 'register'
+    | 'submitLogin'
+    | 'submitRegister'
+    | 'formSubmit'
+    | 'adminSubmit'
+    | 'staffSubmit';
   type?: 'submit' | 'button';
   disabled?: boolean;
 };
@@ -23,6 +30,10 @@ export default function Button({
       'px-4 py-3 w-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500',
     formSubmit:
       'px-4 py-3 w-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500',
+    adminSubmit:
+      'px-4 py-3 w-full bg-[#555559] text-white hover:bg-[#66666a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#555559]',
+    staffSubmit:
+      'px-4 py-3 w-full bg-[#5c4033] text-[#efeceb] hover:bg-[#7a5e51] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5c4033]',
   };
 
   return (

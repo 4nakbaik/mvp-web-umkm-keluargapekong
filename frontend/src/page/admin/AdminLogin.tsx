@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../service/api';
 import { useAuthStore } from '../../hooks/useAuthStore';
+import Logo from '../../assets/Logo.png'
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -34,28 +35,30 @@ export default function AdminLogin() {
     try {
       const result = await api.login({ email, password });
 
-      if (result.token) {
+      const data = result.data || result;
+
+      if (data.token) {
         // Check if user is admin
-        if (result.role !== 'ADMIN') {
+        if (data.role !== 'ADMIN') {
           setGeneralError('Akses ditolak. Anda bukan admin.');
           setIsLoading(false);
           return;
         }
 
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('user', JSON.stringify(result));
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data));
 
         login({
-          id: result.id,
-          email: result.email,
-          token: result.token,
-          role: result.role,
-          name: result.name,
+          id: data.id,
+          email: data.email,
+          token: data.token,
+          role: data.role,
+          name: data.name,
         });
 
         navigate('/admin/dashboard');
       } else {
-        setGeneralError(result.message || 'Login gagal');
+        setGeneralError(data.message || 'Login gagal');
       }
     } catch (error: any) {
       if (error.response) {
@@ -70,26 +73,14 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-[#1a1a1e] flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full">
-        <div className="bg-white/10 backdrop-blur-xl rounded shadow-2xl p-8 border border-white/20">
+        <div className="bg-white/5 backdrop-blur-xl rounded shadow-2xl p-8 border border-white/10">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-br from-blue-400 to-sky-500 rounded mb-4 shadow-lg">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
+            <div className="p-1 inline-flex items-center justify-center w-16 h-16 bg-[#6a6a6f] rounded mb-4 shadow-lg">
+              <img src={Logo} alt="RM Pekong Logo" className="w-full h-full object-cover" />
             </div>
-            <h2 className="text-2xl font-bold text-black">Admin Login</h2>
+            <h2 className="text-2xl font-bold text-[#e5e5e8]">Admin Login</h2>
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
@@ -100,7 +91,7 @@ export default function AdminLogin() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-[#b5b5ba] mb-2">
                 Email
               </label>
               <input
@@ -110,13 +101,13 @@ export default function AdminLogin() {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
                 required
-                className="w-full px-4 py-3 bg-white/5 border border-slate-700 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-slate-500"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 text-[#e5e5e8] rounded focus:ring-2 focus:ring-[#555559] focus:border-[#555559] outline-none transition-all placeholder-[#9e9ea3]/50"
                 placeholder="admin@example.com"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-[#b5b5ba] mb-2">
                 Password
               </label>
               <input
@@ -126,7 +117,7 @@ export default function AdminLogin() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
                 required
-                className="w-full px-4 py-3 bg-white/5 border border-slate-700 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-slate-500"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 text-[#e5e5e8] rounded focus:ring-2 focus:ring-[#555559] focus:border-[#555559] outline-none transition-all placeholder-[#9e9ea3]/50"
                 placeholder="••••••••"
               />
             </div>
@@ -134,7 +125,7 @@ export default function AdminLogin() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 bg-linear-to-r from-blue-500 to-sky-500 text-white font-semibold rounded hover:from-blue-600 hover:to-sky-600 transition-all duration-200 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-[#555559] text-white font-semibold rounded hover:bg-[#66666a] transition-all duration-200 shadow-lg shadow-black/30 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#555559] focus:ring-offset-[#1a1a1e]"
             >
               {isLoading ? 'Loading...' : 'Masuk ke Admin Panel'}
             </button>

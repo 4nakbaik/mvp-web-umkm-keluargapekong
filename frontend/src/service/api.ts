@@ -47,6 +47,7 @@ export const api = {
   async createOrder(data: {
     customerId: string;
     items: { productId: string; quantity: number }[];
+    paymentType?: string;
   }) {
     const res = await axios.post(`${API_BASE_URL}/orders`, data, {
       headers: { ...getAuthHeader() },
@@ -56,6 +57,13 @@ export const api = {
 
   async getOrders() {
     const res = await axios.get(`${API_BASE_URL}/orders`, {
+      headers: { ...getAuthHeader() },
+    });
+    return withDelay(Promise.resolve(res.data));
+  },
+
+  async getOrderReceipt(id: string) {
+    const res = await axios.get(`${API_BASE_URL}/orders/${id}/receipt`, {
       headers: { ...getAuthHeader() },
     });
     return withDelay(Promise.resolve(res.data));
