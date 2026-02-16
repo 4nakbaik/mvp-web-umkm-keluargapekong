@@ -6,20 +6,20 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    host: true,
-    strictPort: true,
+    host: true,       
+    strictPort: true, 
     port: 5173,
     watch: {
-      usePolling: true,
+      usePolling: true, //<---Biar Hot reload nye jalan di wsl
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: process.env.VITE_API_TARGET || 'http://backend:5000',
         changeOrigin: true,
         secure: false,
       },
       '/uploads': {
-        target: 'http://localhost:5000',
+        target: process.env.VITE_API_TARGET || 'http://backend:5000',
         changeOrigin: true,
         secure: false,
       },

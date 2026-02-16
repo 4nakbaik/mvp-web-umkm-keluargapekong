@@ -7,7 +7,8 @@ async function main() {
   console.log('Start Seeding.....');
 
   // Hash password 
-  const password = await bcrypt.hash('admin123', 12);
+  const passwordAdmin = await bcrypt.hash('admin123', 12);
+  const passwordStaff = await bcrypt.hash('staff456', 12);
 
   // 1. Seed User (Admin)
   const admin = await prisma.user.upsert({
@@ -16,7 +17,7 @@ async function main() {
     create: {
       email: 'noreply@pekongfam.com',
       name: 'Nur Cholis',
-      password: password,
+      password: passwordAdmin,
       role: 'ADMIN',
     },
   });
@@ -24,12 +25,12 @@ async function main() {
 
   // 2. Seed User (Staff/Kasir)
   const staff = await prisma.user.upsert({
-    where: { email: 'kasir@pekongfam.com' },
+    where: { email: 'Bungadwisari@pekongfam.com' },
     update: {},
     create: {
-      email: 'Bungadwisari@gmail.com',
+      email: 'Bungadwisari@pekongfam.com',
       name: 'Bunga Dwi Sari',
-      password: 'akucantikbangets',
+      password: passwordStaff,
       role: 'STAFF',
     },
   });
