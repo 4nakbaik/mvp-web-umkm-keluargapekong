@@ -4,13 +4,26 @@ import { api } from '../../service/api';
 import { useCartStore } from '../../hooks/useCartStore';
 import { useToastStore } from '../../hooks/useToastStore';
 import ReceiptModal from '../../components/ReceiptModal';
-import RandomQR from '../../components/RandomQR';
 
 interface Member {
   id: string;
   name: string;
   phone: string | null;
   email: string | null;
+}
+
+interface Voucher {
+  id: string;
+  code: string;
+  type: 'FIXED' | 'PERCENT';
+  value: number;
+  minPurchase: number | null;
+  maxDiscount: number | null;
+  quota: number | null;
+  usageCount: number;
+  isActive: boolean;
+  startDate: string | null;
+  endDate: string | null;
 }
 
 export default function CartPage() {
@@ -36,7 +49,11 @@ export default function CartPage() {
 
   // Payment Type
   const [paymentType, setPaymentType] = useState('CASH');
-  const PAYMENT_METHODS = ['CASH', 'QRIS', 'GOPAY', 'DANA', 'TRANSFER'];
+  const PAYMENT_METHODS = ['CASH', 'QRIS', 'GOPAY', 'DANA', 'MBanking'];
+
+  // Voucher
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [selectedVoucherCode, setSelectedVoucherCode] = useState<string>('');
 
   // Receipt Modal
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -45,20 +62,45 @@ export default function CartPage() {
   // QRIS Modal
   const [showQRModal, setShowQRModal] = useState(false);
   const [lastOrderTotal, setLastOrderTotal] = useState(0);
+  const [orderQrCode, setOrderQrCode] = useState<string>('');
 
   useEffect(() => {
-    const fetchMembers = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.getCustomer();
-        setMembers(res.data || []);
+        const membersRes = await api.getCustomer();
+        setMembers(membersRes.data || []);
       } catch (error) {
         console.error('Error fetching members:', error);
-      } finally {
-        setLoading(false);
       }
+
+      try {
+        const vouchersRes = await api.getVouchers();
+        console.log('Vouchers response:', vouchersRes);
+        setVouchers(vouchersRes.data || []);
+      } catch (error) {
+        console.error('Error fetching vouchers:', error);
+      }
+
+      setLoading(false);
     };
-    fetchMembers();
+    fetchData();
   }, []);
+
+  // Calculate discount preview for a voucher
+  const getDiscountPreview = (voucher: Voucher) => {
+    const total = getTotal();
+    let discount = 0;
+    if (voucher.type === 'FIXED') {
+      discount = Number(voucher.value);
+    } else {
+      discount = total * (Number(voucher.value) / 100);
+      if (voucher.maxDiscount && discount > Number(voucher.maxDiscount)) {
+        discount = Number(voucher.maxDiscount);
+      }
+    }
+    if (discount > total) discount = total;
+    return discount;
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -104,30 +146,40 @@ export default function CartPage() {
         customerId = customerRes.data.id;
       }
 
-      const orderRes = await api.createOrder({
+      const orderPayload: any = {
         customerId,
         items: items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
         })),
         paymentType,
-      });
+      };
+      if (selectedVoucherCode) {
+        orderPayload.voucherCode = selectedVoucherCode;
+      }
+      const orderRes = await api.createOrder(orderPayload);
 
       if (orderRes.data?.id) {
         setCreatedOrderId(orderRes.data.id);
+        if (orderRes.data.qrCode) setOrderQrCode(orderRes.data.qrCode);
       } else if (orderRes.data?.code) {
         setCreatedOrderId(orderRes.data.id);
+        if (orderRes.data.qrCode) setOrderQrCode(orderRes.data.qrCode);
       } else if (orderRes.data?.data?.id) {
         setCreatedOrderId(orderRes.data.data.id);
+        if (orderRes.data.data.qrCode) setOrderQrCode(orderRes.data.data.qrCode);
       }
 
-      setLastOrderTotal(getTotal());
+      // Use backend's totalAmount (includes discount & tax) for QRIS display
+      const responseData = orderRes.data?.data || orderRes.data;
+      setLastOrderTotal(Number(responseData?.totalAmount) || getTotal());
       clearCart();
       setCustomerName('');
       setCustomerPhone('');
       setCustomerEmail('');
       setSelectedMemberId('');
       setPaymentType('CASH');
+      setSelectedVoucherCode('');
 
       setOrderSuccess(true);
       setOrderSuccess(true);
@@ -281,9 +333,43 @@ export default function CartPage() {
                   </button>
                 </div>
               ))}
-              <div className="pt-4 mt-4 border-t border-slate-200 flex justify-between items-center">
-                <span className="text-slate-600 font-medium">Total</span>
-                <span className="text-2xl font-bold text-[#5c4033]">{formatPrice(getTotal())}</span>
+              <div className="pt-4 mt-4 border-t border-slate-200 space-y-2">
+                {(() => {
+                  const subtotal = getTotal();
+                  const selectedV = vouchers.find((v) => v.code === selectedVoucherCode);
+                  let discount = 0;
+                  if (selectedV) {
+                    discount = getDiscountPreview(selectedV);
+                  }
+                  const taxable = subtotal - discount;
+                  const tax = Math.round(taxable * 0.11);
+                  const grandTotal = taxable + tax;
+
+                  return (
+                    <>
+                      <div className="flex justify-between text-sm text-slate-500">
+                        <span>Subtotal</span>
+                        <span>{formatPrice(subtotal)}</span>
+                      </div>
+                      {discount > 0 && (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Diskon ({selectedV?.code})</span>
+                          <span>-{formatPrice(discount)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm text-slate-500">
+                        <span>PPN 11%</span>
+                        <span>{formatPrice(tax)}</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                        <span className="text-slate-600 font-medium">Total</span>
+                        <span className="text-2xl font-bold text-[#5c4033]">
+                          {formatPrice(grandTotal)}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -343,8 +429,42 @@ export default function CartPage() {
                         <div>
                           <p className="font-medium text-slate-800 text-sm">{selected.name}</p>
                           <div className="flex gap-2 text-xs text-slate-500">
-                            {selected.phone && <span>📱 {selected.phone}</span>}
-                            {selected.email && <span>✉️ {selected.email}</span>}
+                            {selected.phone && (
+                              <span className="flex items-center gap-1">
+                                <svg
+                                  className="w-3 h-3"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                                  />
+                                </svg>
+                                {selected.phone}
+                              </span>
+                            )}
+                            {selected.email && (
+                              <span className="flex items-center gap-1">
+                                <svg
+                                  className="w-3 h-3"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                  />
+                                </svg>
+                                {selected.email}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <button
@@ -511,6 +631,170 @@ export default function CartPage() {
               </div>
             </div>
 
+            {/* Voucher Selection */}
+            {items.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Voucher Diskon
+                </label>
+                {vouchers.length === 0 ? (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded text-sm text-slate-400 text-center">
+                    Tidak ada voucher yang tersedia
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {/* Option: No voucher */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVoucherCode('')}
+                      className={`w-full text-left p-3 rounded border transition-colors ${
+                        !selectedVoucherCode
+                          ? 'border-[#5c4033] bg-[#efeceb]'
+                          : 'border-[#cec6c2] bg-white hover:bg-[#efeceb]'
+                      }`}
+                    >
+                      <span className="text-sm text-slate-600">Tanpa Voucher</span>
+                    </button>
+                    {/* Voucher cards with status */}
+                    {vouchers.map((v) => {
+                      const now = new Date();
+                      const isExpired = v.endDate && new Date(v.endDate) < now;
+                      const isUpcoming = v.startDate && new Date(v.startDate) > now;
+                      const isQuotaExhausted = v.quota !== null && v.usageCount >= v.quota;
+                      const isInactive = !v.isActive;
+                      const isUsable =
+                        !isExpired && !isUpcoming && !isQuotaExhausted && !isInactive;
+
+                      const discount = getDiscountPreview(v);
+                      const isSelected = selectedVoucherCode === v.code;
+
+                      // Determine status label and colors
+                      let statusLabel = '';
+                      let statusClass = '';
+                      if (isInactive) {
+                        statusLabel = 'Tidak Aktif';
+                        statusClass = 'bg-slate-100 text-slate-500';
+                      } else if (isExpired) {
+                        statusLabel = 'Kadaluarsa';
+                        statusClass = 'bg-red-50 text-red-500';
+                      } else if (isUpcoming) {
+                        statusLabel = 'Belum Aktif';
+                        statusClass = 'bg-blue-50 text-blue-500';
+                      } else if (isQuotaExhausted) {
+                        statusLabel = 'Kuota Habis';
+                        statusClass = 'bg-slate-100 text-slate-500';
+                      } else {
+                        statusLabel = 'Aktif';
+                        statusClass = 'bg-green-50 text-green-600';
+                      }
+
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          disabled={!isUsable}
+                          onClick={() => {
+                            if (isUsable) setSelectedVoucherCode(isSelected ? '' : v.code);
+                          }}
+                          className={`w-full text-left p-3 rounded border transition-all duration-200 ${
+                            !isUsable
+                              ? 'border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed'
+                              : isSelected
+                                ? 'border-[#5c4033] bg-[#efeceb] shadow-sm'
+                                : 'border-[#cec6c2] bg-white hover:bg-[#efeceb]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                                  !isUsable
+                                    ? 'bg-slate-200 text-slate-400'
+                                    : isSelected
+                                      ? 'bg-[#5c4033] text-white'
+                                      : 'bg-[#ded9d6] text-[#5c4033]'
+                                }`}
+                              >
+                                {v.type === 'PERCENT' ? '%' : 'Rp'}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p
+                                    className={`font-mono font-bold text-sm ${!isUsable ? 'text-slate-400' : 'text-slate-800'}`}
+                                  >
+                                    {v.code}
+                                  </p>
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${statusClass}`}
+                                  >
+                                    {statusLabel}
+                                  </span>
+                                </div>
+                                <p
+                                  className={`text-xs ${!isUsable ? 'text-slate-400' : 'text-slate-500'}`}
+                                >
+                                  {v.type === 'PERCENT'
+                                    ? `Diskon ${Number(v.value)}%${v.maxDiscount ? ` (maks ${formatPrice(Number(v.maxDiscount))})` : ''}`
+                                    : `Diskon ${formatPrice(Number(v.value))}`}
+                                  {v.minPurchase
+                                    ? ` · Min. ${formatPrice(Number(v.minPurchase))}`
+                                    : ''}
+                                </p>
+                                {isUpcoming && v.startDate && (
+                                  <p className="text-[10px] text-blue-500 mt-0.5">
+                                    Aktif mulai:{' '}
+                                    {new Date(v.startDate).toLocaleDateString('id-ID', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              {isUsable ? (
+                                <>
+                                  <p className="text-sm font-bold text-green-600">
+                                    -{formatPrice(discount)}
+                                  </p>
+                                  {isSelected && (
+                                    <svg
+                                      className="w-5 h-5 text-[#5c4033] ml-auto"
+                                      fill="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                                    </svg>
+                                  )}
+                                </>
+                              ) : (
+                                <svg
+                                  className="w-5 h-5 text-slate-300"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Error Message */}
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-600">
@@ -556,7 +840,19 @@ export default function CartPage() {
 
             {/* QR Code Container */}
             <div className="bg-white p-4 rounded-lg shadow-inner border border-slate-100 mb-6">
-              <RandomQR size={200} color="#000000" />
+              {orderQrCode ? (
+                <img
+                  src={orderQrCode}
+                  alt="QR Code Pembayaran"
+                  width={200}
+                  height={200}
+                  className="mx-auto"
+                />
+              ) : (
+                <div className="w-[200px] h-[200px] flex items-center justify-center text-slate-400 text-sm">
+                  Memuat QR...
+                </div>
+              )}
             </div>
 
             <p className="font-semibold text-lg text-[#5c4033] mb-6 text-center">

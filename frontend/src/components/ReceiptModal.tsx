@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../service/api';
+import logoImg from '../assets/Logo.png';
 
 interface ReceiptItem {
   name: string;
@@ -16,8 +17,13 @@ interface ReceiptData {
   cashier: string;
   customer: string;
   items: ReceiptItem[];
+  subtotal: number;
+  discount: number;
+  voucherCode: string;
+  tax: number;
   totalAmount: number;
   paymentType: string;
+  qrCode?: string;
   footerMessage: string;
 }
 
@@ -25,6 +31,8 @@ interface ReceiptModalProps {
   orderId: string;
   onClose: () => void;
 }
+
+const fmtNum = (n: number) => Number(n).toLocaleString('id-ID');
 
 export default function ReceiptModal({ orderId, onClose }: ReceiptModalProps) {
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
@@ -51,15 +59,6 @@ export default function ReceiptModal({ orderId, onClose }: ReceiptModalProps) {
     window.print();
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
-
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -72,6 +71,107 @@ export default function ReceiptModal({ orderId, onClose }: ReceiptModalProps) {
   }
 
   if (!receipt) return null;
+
+  // Shared receipt content
+  const ReceiptContent = ({ isPrint = false }: { isPrint?: boolean }) => {
+    const sep = isPrint ? '--------------------------------' : '————————————————————————';
+    const textBase = isPrint ? 'text-[10px]' : 'text-xs';
+    const textSm = isPrint ? 'text-[9px]' : 'text-[11px]';
+    const logoSize = isPrint ? 'w-12 h-12' : 'w-14 h-14';
+    const qrSize = isPrint ? 'w-16 h-16' : 'w-20 h-20';
+
+    return (
+      <div className={`font-mono leading-tight ${textBase}`}>
+        {/* Header — Left: Shop name + address, Right: Logo */}
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1">
+            <h1 className={`font-bold ${isPrint ? 'text-sm' : 'text-base'} uppercase`}>
+              {receipt.shopName}
+            </h1>
+            <p className={textSm}>{receipt.address}</p>
+          </div>
+          <img src={logoImg} alt="Logo" className={`${logoSize} object-contain ml-2`} />
+        </div>
+
+        <div className="text-center mb-1">{sep}</div>
+
+        {/* Order Info */}
+        <div className="mb-1 space-y-0.5">
+          <div>{receipt.date}</div>
+          <div>NO. ORDER : {receipt.receiptNo}</div>
+          <div>KASIR : {receipt.cashier}</div>
+          <div>PELANGGAN : {receipt.customer}</div>
+        </div>
+
+        <div className="text-center mb-1">{sep}</div>
+
+        {/* Items */}
+        <div className="mb-1 space-y-1">
+          {receipt.items.map((item, index) => (
+            <div key={index}>
+              <div className="font-bold truncate uppercase">{item.name}</div>
+              <div className="flex justify-between pl-4">
+                <span>
+                  {item.qty} x {fmtNum(item.price)}
+                </span>
+                <span>{fmtNum(item.subtotal)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center mb-1">{sep}</div>
+
+        {/* Harga Jual */}
+        <div className="mb-1">
+          <div className="flex justify-between">
+            <span>HARGA JUAL :</span>
+            <span>{fmtNum(receipt.subtotal)}</span>
+          </div>
+          {receipt.discount > 0 && (
+            <div className="flex justify-between">
+              <span>DISKON ({receipt.voucherCode}) :</span>
+              <span>-{fmtNum(receipt.discount)}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="text-center mb-1">{sep}</div>
+
+        {/* Total & Payment */}
+        <div className="mb-1">
+          <div className="flex justify-between font-bold">
+            <span>TOTAL :</span>
+            <span>{fmtNum(receipt.totalAmount)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>{receipt.paymentType} :</span>
+            <span>{fmtNum(receipt.totalAmount)}</span>
+          </div>
+        </div>
+
+        {/* Tax Info */}
+        <div className={`${textSm} mt-1 mb-2`}>
+          PJK RST.: DPP= {fmtNum(receipt.subtotal - receipt.discount)} PJK= {fmtNum(receipt.tax)}
+        </div>
+
+        <div className="text-center mb-1">{sep}</div>
+
+        {/* Footer — Left: Address, Right: QR Code */}
+        <div className="flex items-start justify-between mt-2 mb-2">
+          <div className={`flex-1 ${textSm}`}>
+            <p>{receipt.shopName}</p>
+            <p>{receipt.address}</p>
+            <p className="mt-1 opacity-60">{receipt.receiptNo}</p>
+          </div>
+          {receipt.qrCode && <img src={receipt.qrCode} alt="QR" className={`${qrSize} ml-2`} />}
+        </div>
+
+        {/* Thank you — centered below */}
+        <div className={`text-center ${textSm} mt-1`}>{receipt.footerMessage}</div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -93,66 +193,13 @@ export default function ReceiptModal({ orderId, onClose }: ReceiptModalProps) {
             </button>
           </div>
 
-          {/* Receipt Preview (UI View) */}
+          {/* Receipt Preview */}
           <div className="p-6 bg-white">
-            <div className="text-center mb-4">
-              <h1 className="font-bold text-xl mb-1">{receipt.shopName}</h1>
-              <p className="text-xs text-gray-500">{receipt.address}</p>
-            </div>
-
-            <div className="border-b border-dashed border-gray-300 my-4"></div>
-
-            <div className="text-xs space-y-1 mb-4">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Tanggal:</span>
-                <span>{receipt.date}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">No. Order:</span>
-                <span>{receipt.receiptNo}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Kasir:</span>
-                <span>{receipt.cashier}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Pelanggan:</span>
-                <span>{receipt.customer}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Pembayaran:</span>
-                <span className="font-semibold">{receipt.paymentType}</span>
-              </div>
-            </div>
-
-            <div className="border-b border-dashed border-gray-300 my-4"></div>
-
-            <div className="space-y-2 mb-4">
-              {receipt.items.map((item, index) => (
-                <div key={index} className="text-sm">
-                  <div className="font-medium">{item.name}</div>
-                  <div className="flex justify-between text-gray-600 text-xs">
-                    <span>
-                      {item.qty} x {formatPrice(item.price)}
-                    </span>
-                    <span>{formatPrice(item.subtotal)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-b border-dashed border-gray-300 my-4"></div>
-
-            <div className="flex justify-between items-center font-bold text-lg mb-6">
-              <span>Total</span>
-              <span>{formatPrice(receipt.totalAmount)}</span>
-            </div>
-
-            <div className="text-center text-xs text-gray-500 mb-6">{receipt.footerMessage}</div>
+            <ReceiptContent isPrint={false} />
 
             <button
               onClick={handlePrint}
-              className="w-full py-3 bg-[#5c4033] text-white font-semibold rounded hover:bg-[#4a3329] transition-colors flex items-center justify-center gap-2"
+              className="w-full mt-6 py-3 bg-[#5c4033] text-white font-semibold rounded hover:bg-[#4a3329] transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -168,7 +215,7 @@ export default function ReceiptModal({ orderId, onClose }: ReceiptModalProps) {
         </div>
       </div>
 
-      {/* Actual Print Layout (Controlled by @media print) */}
+      {/* Print Layout */}
       <div className="hidden print:block print:w-[58mm] print:mx-auto print:text-black">
         <style>{`
           @media print {
@@ -196,61 +243,8 @@ export default function ReceiptModal({ orderId, onClose }: ReceiptModalProps) {
             }
           }
         `}</style>
-        <div className="print-content-wrapper text-[10px] leading-tight">
-          <div className="text-center mb-2">
-            <h1 className="font-bold text-sm uppercase">{receipt.shopName}</h1>
-            <p className="text-[9px]">{receipt.address}</p>
-          </div>
-
-          <div className="text-center mb-2">--------------------------------</div>
-
-          <div className="mb-2 space-y-0.5">
-            <div className="flex justify-between">
-              <span>Tgl:</span>
-              <span>{receipt.date}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>No:</span>
-              <span>{receipt.receiptNo}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Kasir:</span>
-              <span>{receipt.cashier}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Cust:</span>
-              <span>{receipt.customer}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Bayar:</span>
-              <span>{receipt.paymentType}</span>
-            </div>
-          </div>
-
-          <div className="text-center mb-2">--------------------------------</div>
-
-          <div className="mb-2 space-y-1">
-            {receipt.items.map((item, index) => (
-              <div key={index}>
-                <div className="font-bold truncate">{item.name}</div>
-                <div className="flex justify-between">
-                  <span>
-                    {item.qty} x {Number(item.price).toLocaleString('id-ID')}
-                  </span>
-                  <span>{Number(item.subtotal).toLocaleString('id-ID')}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mb-2">--------------------------------</div>
-
-          <div className="flex justify-between font-bold text-sm mb-4">
-            <span>TOTAL</span>
-            <span>{Number(receipt.totalAmount).toLocaleString('id-ID')}</span>
-          </div>
-
-          <div className="text-center text-[9px]">{receipt.footerMessage}</div>
+        <div className="print-content-wrapper">
+          <ReceiptContent isPrint={true} />
           <div className="text-center mt-4">.</div>
         </div>
       </div>

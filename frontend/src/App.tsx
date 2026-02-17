@@ -7,6 +7,7 @@ import AdminLayout from './components/admin/AdminLayout';
 import Dashboard from './page/admin/Dashboard';
 import Products from './page/admin/Products';
 import Orders from './page/admin/Orders';
+import Vouchers from './page/admin/Vouchers';
 import ProtectedRoute from './components/ProtectedRoute';
 import StaffLayout from './components/staff/StaffLayout';
 import StaffProducts from './page/staff/StaffProducts';
@@ -40,6 +41,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="products" element={<Products />} />
             <Route path="orders" element={<Orders />} />
+            <Route path="vouchers" element={<Vouchers />} />
           </Route>
         </Route>
       </Routes>

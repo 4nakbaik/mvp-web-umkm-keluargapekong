@@ -48,6 +48,7 @@ export const api = {
     customerId: string;
     items: { productId: string; quantity: number }[];
     paymentType?: string;
+    voucherCode?: string;
   }) {
     const res = await axios.post(`${API_BASE_URL}/orders`, data, {
       headers: { ...getAuthHeader() },
@@ -122,6 +123,58 @@ export const api = {
   // Dashboard
   async getDashboardStats() {
     const res = await axios.get(`${API_BASE_URL}/dashboard`, {
+      headers: { ...getAuthHeader() },
+    });
+    return withDelay(Promise.resolve(res.data));
+  },
+
+  // Voucher
+  async getVouchers() {
+    const res = await axios.get(`${API_BASE_URL}/vouchers`, {
+      headers: { ...getAuthHeader() },
+    });
+    return withDelay(Promise.resolve(res.data));
+  },
+
+  async createVoucher(data: {
+    code: string;
+    type: 'FIXED' | 'PERCENT';
+    value: number;
+    minPurchase?: number;
+    maxDiscount?: number;
+    quota?: number;
+    startDate?: string;
+    endDate?: string;
+    isActive?: boolean;
+  }) {
+    const res = await axios.post(`${API_BASE_URL}/vouchers`, data, {
+      headers: { ...getAuthHeader() },
+    });
+    return withDelay(Promise.resolve(res.data));
+  },
+
+  async updateVoucher(
+    id: string,
+    data: {
+      code?: string;
+      type?: 'FIXED' | 'PERCENT';
+      value?: number;
+      minPurchase?: number;
+      maxDiscount?: number;
+      quota?: number;
+      startDate?: string;
+      endDate?: string;
+      isActive?: boolean;
+    }
+  ) {
+    const res = await axios.put(`${API_BASE_URL}/vouchers/${id}`, data, {
+      headers: { ...getAuthHeader() },
+    });
+    return withDelay(Promise.resolve(res.data));
+  },
+
+  async deleteVoucher(id: string) {
+    const res = await axios.delete(`${API_BASE_URL}/vouchers/${id}`, {
       headers: { ...getAuthHeader() },
     });
     return withDelay(Promise.resolve(res.data));

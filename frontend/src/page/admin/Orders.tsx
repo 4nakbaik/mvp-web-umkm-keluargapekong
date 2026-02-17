@@ -13,11 +13,18 @@ interface OrderItem {
 
 interface Order {
   id: string;
+  code: string;
+  subtotal: number;
+  discountAmount: number;
+  taxAmount: number;
+  totalAmount: number;
   total: number;
+  paymentType: string;
   status: 'PENDING' | 'PAID' | 'CANCELLED' | 'FAILED';
   createdAt: string;
   user: { name: string };
-  customer: { name: string; phone: string } | null;
+  customer: { name: string; phone: string; isMember: boolean } | null;
+  voucher: { code: string } | null;
   items: OrderItem[];
 }
 
@@ -165,7 +172,8 @@ export default function Orders() {
                     <p className="text-sm text-[#6e6e73]">Total</p>
                     <p className="font-semibold text-[#1a1a1e]">
                       {formatPrice(
-                        order.total ||
+                        Number(order.totalAmount) ||
+                          order.total ||
                           order.items.reduce((acc, item) => acc + item.price * item.quantity, 0)
                       )}
                     </p>
@@ -252,6 +260,36 @@ export default function Orders() {
                           </p>
                         </div>
                       ))}
+                    </div>
+                    {/* Financial Breakdown */}
+                    <div className="mt-4 pt-4 border-t border-[#e5e5e8] space-y-1.5 max-w-xs ml-auto">
+                      <div className="flex justify-between text-sm text-[#6e6e73]">
+                        <span>Subtotal</span>
+                        <span>
+                          {formatPrice(
+                            Number(order.subtotal) ||
+                              order.items.reduce((acc, item) => acc + item.price * item.quantity, 0)
+                          )}
+                        </span>
+                      </div>
+                      {Number(order.discountAmount) > 0 && (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Diskon {order.voucher?.code ? `(${order.voucher.code})` : ''}</span>
+                          <span>-{formatPrice(Number(order.discountAmount))}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm text-[#6e6e73]">
+                        <span>PPN 11%</span>
+                        <span>{formatPrice(Number(order.taxAmount) || 0)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-bold text-[#1a1a1e] pt-1.5 border-t border-[#d8d8dc]">
+                        <span>Total</span>
+                        <span>{formatPrice(Number(order.totalAmount) || order.total || 0)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-[#9e9ea3] pt-1">
+                        <span>Pembayaran</span>
+                        <span className="font-medium">{order.paymentType || 'CASH'}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
