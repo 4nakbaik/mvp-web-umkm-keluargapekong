@@ -11,6 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import StaffLayout from './components/staff/StaffLayout';
 import StaffProducts from './page/staff/StaffProducts';
 import StaffMembership from './page/staff/StaffMembership';
+import CartPage from './page/staff/CartPage';
 
 import ToastContainer from './components/ToastContainer';
 
@@ -28,6 +29,7 @@ function App() {
           <Route path="/staff" element={<StaffLayout />}>
             <Route path="products" element={<StaffProducts />} />
             <Route path="membership" element={<StaffMembership />} />
+            <Route path="cart" element={<CartPage />} />
           </Route>
         </Route>
 
