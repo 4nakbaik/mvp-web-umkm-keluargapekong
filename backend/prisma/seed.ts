@@ -8,7 +8,7 @@ async function main() {
 
   // Hash password 
   const passwordAdmin = await bcrypt.hash('admin123', 12);
-  const passwordStaff = await bcrypt.hash('staff456', 12);
+  const passwordStaff = await bcrypt.hash('staff456', 12); 
 
   // 1. Seed User (Admin)
   const admin = await prisma.user.upsert({
@@ -36,7 +36,7 @@ async function main() {
   });
   console.log(`Staff Created: ${staff.email}`);
 
-  // 3. Seed Customer ----> Staff/Kasir
+  // 3. Seed Customer
   const customers = [
     {
       name: 'Budi',
@@ -70,7 +70,7 @@ async function main() {
   }
   console.log('Customers Created');
 
-  // 4. Seed Produk ----> Admin
+  // 4. Seed Produk
   const products = [
     {
       name: 'Kopi Esspresso Gula Jawa',
@@ -124,6 +124,56 @@ async function main() {
     });
   }
   console.log('Products Created');
+
+  // 5. Seed Voucher 
+  const vouchers = [
+    {
+      code: 'COLISLUVPEKONG',
+      type: 'PERCENT',
+      value: 10, // 10%
+      maxDiscount: 20000, 
+      minPurchase: 50000, 
+      quota: 100, 
+      startDate: new Date('2026-01-28'),
+      endDate: new Date('2028-10-07'), 
+    },
+    {
+      code: 'DIDALIMAPULUHREBUAN',
+      type: 'FIXED',
+      value: 50000, // Potongan gocap
+      minPurchase: 100000,
+      quota: 5, 
+      startDate: new Date(),
+      endDate: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000), // Valid Seminggu semenjak didapatkan
+    },
+    {
+      code: 'PEKONGGIFT', // Voucher basi tuk tes error
+      type: 'FIXED',
+      value: 100000,
+      quota: 10,
+      startDate: new Date('2020-01-01'),
+      endDate: new Date('2021-01-01'), 
+    }
+  ];
+
+  for (const v of vouchers) {
+    await prisma.voucher.upsert({
+      where: { code: v.code },
+      update: {},
+      create: {
+        code: v.code,
+        type: v.type as any,
+        value: v.value,
+        maxDiscount: v.maxDiscount,
+        minPurchase: v.minPurchase,
+        quota: v.quota,
+        startDate: v.startDate,
+        endDate: v.endDate
+      }
+    });
+  }
+  console.log('Vouchers Created');
+
   console.log('Seeding Finished');
 }
 

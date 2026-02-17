@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import prisma from '../utils/prisma'; 
+import prisma from '../utils/prisma';
+import QRCode from 'qrcode'; 
 
 // --- 1. Buat Checkout (POST) ---
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
@@ -11,7 +12,8 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
     }
     const userId = user.id;
 
-    const { customerId, items, paymentType } = req.body;
+    // Ambil voucherCode dari body
+    const { customerId, items, paymentType, voucherCode } = req.body;
 
     // Validasi Cart Kosong
     if (!items || items.length === 0) {
@@ -22,13 +24,12 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
 
     // --- MULAI TRANSAKSI ---
     const result = await prisma.$transaction(async (tx) => {
-      let totalAmount = 0;
+      let subtotal = 0;
       
       // Array penampung item untuk bulk insert
-      // Kita pake (any) ye biar Ts ga rewel
       const orderItemsData: any[] = []; 
 
-      // Loop Barang
+      // 1. Loop Barang & Hitung Subtotal
       for (const item of items) {
         // Cek Produk
         const product = await tx.product.findUnique({ where: { id: item.productId } });
@@ -42,9 +43,10 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
           throw new Error(`Stok ${product.name} kurang! (Sisa: ${product.stock}, Diminta: ${item.quantity})`);
         }
 
-        // Hitung Subtotal
-        const subtotal = Number(product.price) * item.quantity;
-        totalAmount += subtotal;
+        // Hitung Subtotal Item
+        const itemPrice = Number(product.price);
+        const itemSubtotal = itemPrice * item.quantity;
+        subtotal += itemSubtotal;
 
         // Kurangi Stok (Update DB)
         await tx.product.update({
@@ -56,45 +58,116 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         orderItemsData.push({
           productId: product.id,
           quantity: item.quantity,
-          price: Number(product.price) 
+          price: itemPrice
         });
       }
 
-      // Generate Kode TRX Unik
-      const trxCode = `TRX-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      // 2. Logic Voucher (Diskon)
+      let discountAmount = 0;
+      let usedVoucherId: string | null = null;
 
-      // Simpan Order ke DB
+      if (voucherCode) {
+        const voucher = await tx.voucher.findUnique({ where: { code: voucherCode } });
+
+        // Validasi Ketersediaan Voucher
+        if (!voucher) throw new Error('Voucher tidak ditemukan');
+        if (!voucher.isActive) throw new Error('Voucher sedang tidak aktif');
+        
+        // Validasi Kuota
+        if (voucher.quota !== null && voucher.usageCount >= voucher.quota) {
+          throw new Error('Kuota voucher sudah habis');
+        }
+
+        // Validasi Tanggal
+        const now = new Date();
+        if (voucher.startDate && now < voucher.startDate) throw new Error('Voucher belum dimulai');
+        if (voucher.endDate && now > voucher.endDate) throw new Error('Voucher sudah kadaluarsa');
+
+        // Validasi Minimal Belanja
+        if (voucher.minPurchase && subtotal < Number(voucher.minPurchase)) {
+          throw new Error(`Minimal belanja Rp ${Number(voucher.minPurchase).toLocaleString('id-ID')}`);
+        }
+
+        // Hitung Nilai Diskon
+        if (voucher.type === 'FIXED') {
+          discountAmount = Number(voucher.value);
+        } else if (voucher.type === 'PERCENT') {
+          discountAmount = subtotal * (Number(voucher.value) / 100);
+          // Cek Max Discount (Cap)
+          if (voucher.maxDiscount && discountAmount > Number(voucher.maxDiscount)) {
+            discountAmount = Number(voucher.maxDiscount);
+          }
+        }
+
+        if (discountAmount > subtotal) discountAmount = subtotal;
+        
+        usedVoucherId = voucher.id;
+
+        // Increment usage count voucher
+        await tx.voucher.update({
+          where: { id: voucher.id },
+          data: { usageCount: { increment: 1 } }
+        });
+      }
+
+      // 3. Logic Pajak 
+      const taxRate = 0.11; 
+      const taxableAmount = subtotal - discountAmount;
+      const taxAmount = taxableAmount * taxRate;
+
+      // 4. Hitung Grand Total
+      const totalAmount = taxableAmount + taxAmount;
+
+      // 5. Generate Kode TRX & QR Code
+      const trxCode = `TRX-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      
+      // Generate QR Base64 (Isinya link verifikasi/Kode TRX)
+      const qrData = trxCode; 
+      const qrCodeBase64 = await QRCode.toDataURL(qrData);
+
+      // 6. Simpan Order ke DB
       const newOrder = await tx.order.create({
         data: {
           code: trxCode,
           userId: userId,
           customerId: customerId || null, 
+          
+          // Data Keuangan
+          subtotal: subtotal,
+          discountAmount: discountAmount,
+          taxAmount: taxAmount,
           totalAmount: totalAmount,
+          
           paymentType: finalPayment,
+          voucherId: usedVoucherId, 
+
           items: {
             create: orderItemsData 
           }
         },
         include: {
           items: { include: { product: true } },
-          user: { select: { name: true } }
+          user: { select: { name: true } },
+          voucher: { select: { code: true, type: true, value: true } }
         }
       });
 
-      return newOrder;
+      // Return order + QR Code agar frontend bisa langsung display
+      return { ...newOrder, qrCode: qrCodeBase64 };
     });
 
     res.status(201).json({ status: 'success', data: result });
 
   } catch (error: any) {
-    if (error.message.includes('Product') || error.message.includes('Stok')) {
+    // Error handling spesifik untuk pesan ke frontend
+    if (error.message.includes('Product') || error.message.includes('Stok') || error.message.includes('Voucher') || error.message.includes('Minimal')) {
       return res.status(400).json({ status: 'fail', message: error.message });
     }
     next(error);
   }
 };
 
-// --- 2. Lihat Riwayat (GET) ---
+// --- 2. History (GET) ---
 export const getOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orders = await prisma.order.findMany({
@@ -102,7 +175,8 @@ export const getOrders = async (req: Request, res: Response, next: NextFunction)
       include: {
         user: { select: { name: true } },
         customer: { select: { name: true, isMember: true } }, 
-        items: { include: { product: { select: { name: true } } } }
+        items: { include: { product: { select: { name: true } } } },
+        voucher: { select: { code: true } } // Include info voucher
       }
     });
 
@@ -112,7 +186,7 @@ export const getOrders = async (req: Request, res: Response, next: NextFunction)
   }
 };
 
-// --- 3. Cetak Struk (POST/GET) ---
+// --- 3. Print Struk (POST/GET) ---
 export const getOrderReceipt = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
@@ -122,6 +196,7 @@ export const getOrderReceipt = async (req: Request, res: Response, next: NextFun
       include: {
         user: { select: { name: true } },
         customer: { select: { name: true, isMember: true } }, 
+        voucher: { select: { code: true } },
         items: {
           include: {
             product: { select: { name: true } }
@@ -133,6 +208,9 @@ export const getOrderReceipt = async (req: Request, res: Response, next: NextFun
     if (!order) {
       return res.status(404).json({ message: 'Order tidak ditemukan' });
     }
+
+    // Generate QR Code on-the-fly untuk struk
+    const qrCodeBase64 = await QRCode.toDataURL(order.code);
 
     // Format Data Struk
     const receiptData = {
@@ -152,8 +230,16 @@ export const getOrderReceipt = async (req: Request, res: Response, next: NextFun
         subtotal: item.quantity * Number(item.price)
       })),
 
+      // Rincian Keuangan
+      subtotal: Number(order.subtotal),
+      discount: Number(order.discountAmount), // Tampilkan diskon
+      voucherCode: order.voucher?.code || "-",
+      tax: Number(order.taxAmount),           // Tampilkan pajak
+      
       totalAmount: Number(order.totalAmount),
       paymentType: order.paymentType,
+      
+      qrCode: qrCodeBase64, // Data QR Image
       footerMessage: "Terima Kasih, Datang Lagi Yaaaa! :)"
     };
 

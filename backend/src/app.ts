@@ -8,6 +8,7 @@ import orderRoutes from './routes/order.routes';
 import authRoutes from './routes/auth.routes';
 import customerRoutes from './routes/customer.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import voucherRoutes from './routes/voucher.routes';
 
 
 const app: Application = express();
@@ -35,6 +36,7 @@ app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/orders', orderRoutes);
 app.use('/api/v1/customers', customerRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v1/vouchers', voucherRoutes);
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
