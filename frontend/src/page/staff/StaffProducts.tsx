@@ -71,7 +71,7 @@ export default function StaffProducts() {
   );
 
   return (
-    <div className="p-8">
+    <div className="p-4">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>

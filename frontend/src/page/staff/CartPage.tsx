@@ -5,6 +5,16 @@ import { useCartStore } from '../../hooks/useCartStore';
 import { useToastStore } from '../../hooks/useToastStore';
 import ReceiptModal from '../../components/ReceiptModal';
 
+// Bank logos
+import LogoSeabank from '../../assets/seabank.webp';
+import LogoBCA from '../../assets/bca.webp';
+import LogoMandiri from '../../assets/mandiri.webp';
+import LogoBNI from '../../assets/bni.webp';
+import LogoBRI from '../../assets/bri.webp';
+import LogoBSI from '../../assets/bsi.webp';
+import LogoPermata from '../../assets/permata.png';
+import LogoCIMB from '../../assets/Cimb niaga.png';
+
 interface Member {
   id: string;
   name: string;
@@ -50,6 +60,22 @@ export default function CartPage() {
   // Payment Type
   const [paymentType, setPaymentType] = useState('CASH');
   const PAYMENT_METHODS = ['CASH', 'QRIS', 'GOPAY', 'DANA', 'MBanking'];
+
+  // MBanking bank selection
+  const [selectedBank, setSelectedBank] = useState('');
+  const [showBankDropdown, setShowBankDropdown] = useState(false);
+
+  const BANK_LIST = [
+    { id: 'seabank', name: 'SeaBank', color: '#00A5CF', logo: LogoSeabank },
+    { id: 'bca', name: 'Bank BCA', color: '#003D79', logo: LogoBCA },
+    { id: 'mandiri', name: 'Bank Mandiri', color: '#003366', logo: LogoMandiri },
+    { id: 'bni', name: 'Bank BNI', color: '#F15A22', logo: LogoBNI },
+    { id: 'bri', name: 'Bank BRI', color: '#00529C', logo: LogoBRI },
+    { id: 'bsi', name: 'Bank Syariah Indonesia (BSI)', color: '#00A99D', logo: LogoBSI },
+    { id: 'permata', name: 'Bank Permata', color: '#005BAA', logo: LogoPermata },
+    { id: 'cimb', name: 'Bank CIMB Niaga', color: '#7B1B2D', logo: LogoCIMB },
+    { id: 'lainnya', name: 'Bank Lainnya', color: '#8B7355', logo: null },
+  ];
 
   // Voucher
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -146,13 +172,17 @@ export default function CartPage() {
         customerId = customerRes.data.id;
       }
 
+      // Build payment type string (append bank name for MBanking)
+      const finalPaymentType =
+        paymentType === 'MBanking' && selectedBank ? `MBanking - ${selectedBank}` : paymentType;
+
       const orderPayload: any = {
         customerId,
         items: items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
         })),
-        paymentType,
+        paymentType: finalPaymentType,
       };
       if (selectedVoucherCode) {
         orderPayload.voucherCode = selectedVoucherCode;
@@ -179,6 +209,7 @@ export default function CartPage() {
       setCustomerEmail('');
       setSelectedMemberId('');
       setPaymentType('CASH');
+      setSelectedBank('');
       setSelectedVoucherCode('');
 
       setOrderSuccess(true);
@@ -200,7 +231,89 @@ export default function CartPage() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center">Loading...</div>;
+    return (
+      <div className="p-4 md:p-8 max-w-4xl mx-auto">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="h-8 w-40 bg-slate-200 rounded animate-pulse mb-2" />
+            <div className="h-4 w-56 bg-slate-200 rounded animate-pulse" />
+          </div>
+          <div className="h-10 w-28 bg-slate-200 rounded animate-pulse" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Cart items skeleton */}
+          <div className="bg-white rounded shadow-sm p-6">
+            <div className="h-6 w-36 bg-slate-200 rounded animate-pulse mb-4" />
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-4 p-3 bg-slate-50 rounded animate-pulse"
+                >
+                  <div className="w-16 h-16 bg-slate-200 rounded" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-slate-200 rounded w-2/3 mb-2" />
+                    <div className="h-3 bg-slate-200 rounded w-1/3" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-slate-200 rounded" />
+                    <div className="w-8 h-6 bg-slate-200 rounded" />
+                    <div className="w-8 h-8 bg-slate-200 rounded" />
+                  </div>
+                </div>
+              ))}
+              <div className="pt-4 mt-4 border-t border-slate-200 space-y-2">
+                <div className="flex justify-between">
+                  <div className="h-4 w-16 bg-slate-200 rounded animate-pulse" />
+                  <div className="h-4 w-24 bg-slate-200 rounded animate-pulse" />
+                </div>
+                <div className="flex justify-between">
+                  <div className="h-4 w-20 bg-slate-200 rounded animate-pulse" />
+                  <div className="h-4 w-20 bg-slate-200 rounded animate-pulse" />
+                </div>
+                <div className="flex justify-between pt-2 border-t border-slate-100">
+                  <div className="h-5 w-12 bg-slate-200 rounded animate-pulse" />
+                  <div className="h-7 w-32 bg-slate-200 rounded animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Checkout form skeleton */}
+          <div className="bg-white rounded shadow-sm p-6">
+            <div className="h-6 w-52 bg-slate-200 rounded animate-pulse mb-6" />
+            <div className="space-y-6">
+              {/* Customer type toggle */}
+              <div>
+                <div className="h-4 w-28 bg-slate-200 rounded animate-pulse mb-2" />
+                <div className="flex rounded overflow-hidden">
+                  <div className="flex-1 h-10 bg-slate-200 animate-pulse" />
+                  <div className="flex-1 h-10 bg-slate-100 animate-pulse" />
+                </div>
+              </div>
+              {/* Name field */}
+              <div>
+                <div className="h-4 w-20 bg-slate-200 rounded animate-pulse mb-1" />
+                <div className="h-10 bg-slate-100 rounded animate-pulse" />
+              </div>
+              {/* Payment methods */}
+              <div>
+                <div className="h-4 w-36 bg-slate-200 rounded animate-pulse mb-2" />
+                <div className="grid grid-cols-3 gap-2">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="h-9 bg-slate-100 rounded animate-pulse" />
+                  ))}
+                </div>
+              </div>
+              {/* Submit button */}
+              <div className="h-12 bg-slate-200 rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -618,7 +731,15 @@ export default function CartPage() {
                 {PAYMENT_METHODS.map((method) => (
                   <button
                     key={method}
-                    onClick={() => setPaymentType(method)}
+                    onClick={() => {
+                      setPaymentType(method);
+                      if (method !== 'MBanking') {
+                        setSelectedBank('');
+                        setShowBankDropdown(false);
+                      } else {
+                        setShowBankDropdown(true);
+                      }
+                    }}
                     className={`px-2 py-2 rounded text-xs font-medium transition-colors border ${
                       paymentType === method
                         ? 'bg-[#5c4033] text-white border-[#5c4033]'
@@ -629,7 +750,162 @@ export default function CartPage() {
                   </button>
                 ))}
               </div>
+
+              {/* MBanking Bank Selection Dropdown */}
+              {paymentType === 'MBanking' && (
+                <div
+                  className="mt-3 border border-[#cec6c2] rounded-lg overflow-hidden"
+                  style={{ animation: 'slideDown 0.25s ease-out' }}
+                >
+                  {/* Dropdown Header */}
+                  <button
+                    type="button"
+                    onClick={() => setShowBankDropdown(!showBankDropdown)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#5c4033] to-[#7a5a4a] text-white"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-semibold">Mobile Banking</p>
+                        <p className="text-xs text-white/70">
+                          {selectedBank || 'Pilih bank tujuan'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {selectedBank && (
+                        <div className="w-5 h-5 rounded-full bg-green-400 flex items-center justify-center">
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                      <svg
+                        className={`w-4 h-4 transition-transform duration-200 ${showBankDropdown ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </div>
+                  </button>
+
+                  {/* Bank List */}
+                  {showBankDropdown && (
+                    <div className="bg-white divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                      {BANK_LIST.map((bank) => (
+                        <button
+                          key={bank.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedBank(bank.name);
+                            setShowBankDropdown(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-4 py-3 transition-all duration-150 hover:bg-[#faf8f7] ${
+                            selectedBank === bank.name ? 'bg-[#efeceb]' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {bank.logo ? (
+                              <img
+                                src={bank.logo}
+                                alt={bank.name}
+                                className="w-9 h-9 rounded-lg object-contain bg-white border border-slate-100 p-1"
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-white border border-slate-100">
+                                <svg
+                                  className="w-5 h-5 text-[#8B7355]"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M12 21v-2m0 0V9m0 10H7a2 2 0 01-2-2v-5h14v5a2 2 0 01-2 2h-5zM3 9h18M12 3l9 6H3l9-6z"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                            <div className="text-left">
+                              <p className="text-sm font-medium text-slate-800">{bank.name}</p>
+                              {bank.id === 'lainnya' && (
+                                <p className="text-xs text-slate-400">
+                                  Menerima transfer dari semua bank.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {selectedBank === bank.name && (
+                            <svg
+                              className="w-5 h-5 text-[#5c4033]"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2.5}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Keyframe animation for dropdown */}
+            <style>{`
+              @keyframes slideDown {
+                from {
+                  opacity: 0;
+                  max-height: 0;
+                  transform: translateY(-8px);
+                }
+                to {
+                  opacity: 1;
+                  max-height: 500px;
+                  transform: translateY(0);
+                }
+              }
+            `}</style>
 
             {/* Voucher Selection */}
             {items.length > 0 && (
