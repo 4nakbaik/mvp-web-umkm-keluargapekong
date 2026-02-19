@@ -1,43 +1,54 @@
 import { Request, Response, NextFunction } from 'express';
-import prisma from '../config/database'; 
+import prisma from '../utils/prisma';
 
-export const getDashboardStats = async (req: Request, res: Response, next: NextFunction) => {
+export const getDashboardSummary = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const [totalRevenue, totalOrders, lowStockCount, recentOrders] = await Promise.all([
-      
-      // 1. Hitung Total Omsetnye
-      prisma.order.aggregate({
-        _sum: { totalAmount: true }
-      }),
+    const now = new Date();
 
-      // 2. Hitung Total Transaksi
-      prisma.order.count(),
+    // 1. Revenue
+    const revenue = await prisma.order.aggregate({
+      _sum: { totalAmount: true },
+      where: { status: 'PAID' }
+    });
 
-      // 3. Hitung Produk yang Stoknya Menipis 
-      prisma.product.count({
-        where: { stock: { lte: 5 } }
-      }),
+    // 2. Total Orders
+    const totalOrders = await prisma.order.count({
+      where: { status: 'PAID' }
+    });
 
-      // 4. Ambil 5 Transaksi Terakhir 
-      prisma.order.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: { select: { name: true } } // Siapa kasirnya?
-        }
-      })
-    ]);
+    // 3. Low Stock Products
+    const lowStockProducts = await prisma.product.findMany({
+      where: { stock: { lt: 10 } },
+      select: { id: true, name: true, stock: true },
+      take: 5,
+      orderBy: { stock: 'asc' }
+    });
+
+    // 4. Count Active Vouchers
+    const activeVouchersCount = await prisma.voucher.count({
+      where: {
+        isActive: true,
+        endDate: { gte: now }
+      }
+    });
+
+    // 5. Count Expired Vouchers
+    const expiredVouchersCount = await prisma.voucher.count({
+      where: {
+        endDate: { lt: now }
+      }
+    });
 
     res.status(200).json({
       status: 'success',
       data: {
-        totalRevenue: totalRevenue._sum.totalAmount || 0, // Handle kalau belum ada data (null aja lah ye)
+        totalRevenue: revenue._sum.totalAmount || 0,
         totalOrders,
-        lowStockAlert: lowStockCount,
-        recentOrders
+        lowStockProducts,
+        activeVouchersCount,
+        expiredVouchersCount
       }
     });
-
   } catch (error) {
     next(error);
   }

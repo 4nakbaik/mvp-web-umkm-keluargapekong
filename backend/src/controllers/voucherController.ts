@@ -30,9 +30,29 @@ export const createVoucher = async (req: Request, res: Response, next: NextFunct
 // --- 2. Lihat Semua Voucher ---
 export const getVouchers = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { status } = req.query; 
+    
+    let whereClause: any = {};
+    const now = new Date();
+
+    if (status === 'active') {
+      whereClause = {
+        isActive: true,
+        endDate: { gte: now }, 
+        startDate: { lte: now } 
+      };
+    } else if (status === 'expired') {
+      whereClause = {
+        endDate: { lt: now } 
+      };
+    }
+    // Kalau status kosong, tampilkan semua (History)
+
     const vouchers = await prisma.voucher.findMany({
+      where: whereClause,
       orderBy: { createdAt: 'desc' }
     });
+
     res.status(200).json({ status: 'success', data: vouchers });
   } catch (error) {
     next(error);

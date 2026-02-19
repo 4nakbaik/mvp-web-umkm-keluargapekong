@@ -1,11 +1,10 @@
-import express from 'express';
-import * as dashboardController from '../controllers/dashboardController';
+import { Router } from 'express';
+import { getDashboardSummary } from '../controllers/dashboardController';
 import { protect, adminOnly } from '../middlewares/authMiddleware';
 
-const router = express.Router();
+const router = Router();
 
 router.use(protect, adminOnly);
-
-router.get('/', dashboardController.getDashboardStats);
+router.get('/summary', getDashboardSummary);
 
 export default router;

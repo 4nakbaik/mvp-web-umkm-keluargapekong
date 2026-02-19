@@ -8,8 +8,6 @@ const storage = multer.diskStorage({
     cb(null, 'public/uploads/'); // Simpan dimari
   },
   filename: (req, file, cb) => {
-    // Format: "Abangcolisluv.jpg"
-    // Biar gak bentrok kalau ada user upload file bernama "foto.jpg" barengan
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }

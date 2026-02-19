@@ -170,13 +170,16 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
 // --- 2. History (GET) ---
 export const getOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { status } = req.query; 
+
     const orders = await prisma.order.findMany({
+      where: status ? { status: status as any } : {},
       orderBy: { createdAt: 'desc' },
       include: {
         user: { select: { name: true } },
         customer: { select: { name: true, isMember: true } }, 
-        items: { include: { product: { select: { name: true } } } },
-        voucher: { select: { code: true } } // Include info voucher
+        voucher: { select: { code: true } },
+        items: { include: { product: { select: { name: true } } } }
       }
     });
 
@@ -186,7 +189,29 @@ export const getOrders = async (req: Request, res: Response, next: NextFunction)
   }
 };
 
-// --- 3. Print Struk (POST/GET) ---
+// --- 3. Update Status (PUT) ---
+export const updateOrderStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; 
+
+    // Validasi input status (Biar gak ngasal stringnye)
+    if (!['PENDING', 'PAID', 'CANCELLED', 'FAILED'].includes(status)) {
+      return res.status(400).json({ message: 'Status tidak valid' });
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id },
+      data: { status: status as any }
+    });
+
+    res.status(200).json({ status: 'success', data: updatedOrder });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// --- 4. Print Struk (POST/GET) ---
 export const getOrderReceipt = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;

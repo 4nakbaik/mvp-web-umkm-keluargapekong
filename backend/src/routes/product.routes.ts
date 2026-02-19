@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { protect, adminOnly } from '../middlewares/authMiddleware';
-import { upload } from '../middlewares/uploadMiddleware'; // Middleware Multer
+import { upload } from '../middlewares/uploadMiddleware';
 import {
   getProducts,
   createProduct,
@@ -11,11 +11,11 @@ import {
 
 const router = Router();
 
-// --- CUST/STAFF ---
+//---- STAFF ----
 router.get('/', getProducts);
 router.get('/:id', getProductById);
 
-// --- ADMIN ---
+//---- ADMIN ----
 router.post('/', protect, adminOnly, upload.single('image'), createProduct);
 router.put('/:id', protect, adminOnly, upload.single('image'), updateProduct);
 router.delete('/:id', protect, adminOnly, deleteProduct);

@@ -103,6 +103,7 @@ model Order {
   totalAmount    Decimal     @db.Decimal(10, 2)
   paymentType    String      @default("CASH") 
   createdAt      DateTime    @default(now())
+  status         OrderStatus @default(PENDING)
   userId         String
   user           User        @relation(fields: [userId], references: [id])
   customerId     String?

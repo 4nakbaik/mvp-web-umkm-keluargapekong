@@ -31,7 +31,6 @@ export const getProductById = async (req: Request, res: Response, next: NextFunc
 // 3. CREATE
 export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Iki Tambah description
     const { name, price, stock, category, description } = req.body;
 
     let imageUrl = '';
@@ -41,7 +40,6 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
 
     const payload = {
       name,
-      // Iki description (Tak Coba ubah)
       description,
       category,
       price: Number(price),
@@ -51,9 +49,7 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
 
     const validatedData = createProductSchema.parse(payload);
     
-    // Iki ditambah karena service butuh userId
     const userId = (req as any).user.id;
-    // IKi ditambah ada userId nya
     const product = await productService.createProductService(validatedData, userId);
 
     res.status(201).json({ status: 'success', data: product });
@@ -62,16 +58,16 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-// 4. UPDATE
+// 5. UPDATE
 export const updateProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { name, price, stock, category } = req.body;
-    const payload: any = {
-      name,
-      category,
-    };
+    const { name, price, stock, category, description } = req.body;
+    const payload: any = {};
 
+    if (name) payload.name = name;
+    if (category) payload.category = category;
+    if (description !== undefined) payload.description = description;
     if (price) payload.price = Number(price);
     if (stock) payload.stock = Number(stock);
     if (req.file) {
@@ -90,7 +86,7 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-// 5. DELETE
+// 6. DELETE
 export const deleteProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
