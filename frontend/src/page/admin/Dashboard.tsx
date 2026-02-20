@@ -41,27 +41,48 @@ export default function Dashboard() {
   const [stats, setStats] = useState({
     totalOrders: 0,
     totalRevenue: 0,
-    lowStockAlert: 0,
+    lowStockProducts: [] as { id: string; name: string; stock: number }[],
+    activeVouchersCount: 0,
+    expiredVouchersCount: 0,
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const res = await api.getDashboardStats();
-        // Backend returns: { status: 'success', data: { totalRevenue, totalOrders, lowStockAlert, recentOrders } }
-        const { totalRevenue, totalOrders, lowStockAlert, recentOrders } = res.data;
+        setError(null);
+        const [dashboardRes, ordersRes] = await Promise.all([
+          api.getDashboardStats(),
+          api.getOrders(),
+        ]);
+
+        console.log('Dashboard Res:', dashboardRes); // Debugging
+
+        const {
+          totalRevenue,
+          totalOrders,
+          lowStockProducts,
+          activeVouchersCount,
+          expiredVouchersCount,
+        } = dashboardRes.data;
 
         setStats({
           totalOrders: totalOrders || 0,
           totalRevenue: totalRevenue || 0,
-          lowStockAlert: lowStockAlert || 0,
+          lowStockProducts: lowStockProducts || [],
+          activeVouchersCount: activeVouchersCount || 0,
+          expiredVouchersCount: expiredVouchersCount || 0,
         });
-        setRecentOrders(recentOrders || []);
-      } catch (error) {
+
+        // Backend doesn't return recentOrders in summary, so we slice from getOrders
+        const allOrders = ordersRes.data || [];
+        setRecentOrders(allOrders.slice(0, 5));
+      } catch (error: any) {
         console.error('Error fetching dashboard stats:', error);
+        setError(error.message || 'Gagal memuat data dashboard');
       } finally {
         setLoading(false);
       }
@@ -120,6 +141,23 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold text-[#1a1a1e]">Dashboard</h1>
         <p className="text-[#6e6e73] mt-1">Selamat datang di Admin Panel Keluarga Pekong</p>
       </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-100 border border-red-200 text-red-700 rounded-lg flex items-center gap-3">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <div>
+            <p className="font-bold">Terjadi Kesalahan</p>
+            <p className="text-sm">{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -192,7 +230,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Low Stock Alert (Replaces Total Products) */}
+        {/* Voucher Stats (Replaces Low Stock Alert) */}
         <div className="bg-white rounded p-6 shadow-sm hover:shadow-md transition-shadow">
           {loading ? (
             <div className="animate-pulse">
@@ -202,11 +240,53 @@ export default function Dashboard() {
             </div>
           ) : (
             <>
-              <div
-                className={`inline-flex items-center justify-center w-12 h-12 rounded mb-4 shadow-lg ${stats.lowStockAlert > 0 ? 'bg-red-500' : 'bg-[#3d3d42]'}`}
-              >
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-[#e5e5e8] text-[#555559] rounded mb-4 shadow-lg">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+                  />
+                </svg>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-bold text-[#1a1a1e]">{stats.activeVouchersCount}</p>
+                <span className="text-sm text-green-600 font-medium">Aktif</span>
+                <span className="text-gray-300">|</span>
+                <p className="text-xl font-semibold text-[#6e6e73]">{stats.expiredVouchersCount}</p>
+                <span className="text-sm text-[#9e9ea3]">Exp</span>
+              </div>
+              <p className="text-[#6e6e73] mt-1">Status Voucher</p>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+        {/* Low Stock Products (New) */}
+        <div className="bg-white rounded shadow-sm flex flex-col h-full">
+          <div className="p-6 border-b border-[#e5e5e8]">
+            <h2 className="text-xl font-semibold text-[#1a1a1e]">Stok Menipis</h2>
+            <p className="text-sm text-[#6e6e73] mt-1">Produk dengan stok kurang dari 10</p>
+          </div>
+          <div className="p-6 flex-1 overflow-auto">
+            {loading ? (
+              <div className="space-y-3 animate-pulse">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex justify-between items-center p-3 border border-gray-100 rounded"
+                  >
+                    <div className="h-4 bg-[#d8d8dc] rounded w-32"></div>
+                    <div className="h-6 bg-[#d8d8dc] rounded w-8"></div>
+                  </div>
+                ))}
+              </div>
+            ) : stats.lowStockProducts.length === 0 ? (
+              <div className="text-center py-6 text-green-600">
                 <svg
-                  className="w-6 h-6 text-white"
+                  className="w-12 h-12 mx-auto mb-2 opacity-50"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -215,22 +295,28 @@ export default function Dashboard() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
+                <p>Semua stok aman</p>
               </div>
-              <p
-                className={`text-3xl font-bold ${stats.lowStockAlert > 0 ? 'text-red-500' : 'text-[#1a1a1e]'}`}
-              >
-                {stats.lowStockAlert}
-              </p>
-              <p className="text-[#6e6e73] mt-1">Stok Menipis</p>
-            </>
-          )}
+            ) : (
+              <ul className="space-y-3">
+                {stats.lowStockProducts.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex justify-between items-center p-3 bg-red-50 border border-red-100 rounded"
+                  >
+                    <span className="font-medium text-[#1a1a1e] truncate pr-2">{p.name}</span>
+                    <span className="px-2.5 py-1 bg-white text-red-600 font-bold rounded text-sm border border-red-200">
+                      {p.stock}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Orders Section (New) */}
         <div className="bg-white rounded shadow-sm">
           <div className="p-6 border-b border-[#e5e5e8]">
@@ -238,7 +324,24 @@ export default function Dashboard() {
             <p className="text-sm text-[#6e6e73] mt-1">5 Transaksi terbaru yang masuk</p>
           </div>
           <div className="p-6">
-            {recentOrders.length === 0 ? (
+            {loading ? (
+              <div className="space-y-4 animate-pulse">
+                <div className="flex justify-between mb-4 border-b pb-2 border-gray-100">
+                  <div className="h-3 bg-[#d8d8dc] rounded w-16"></div>
+                  <div className="h-3 bg-[#d8d8dc] rounded w-16"></div>
+                  <div className="h-3 bg-[#d8d8dc] rounded w-16"></div>
+                </div>
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex justify-between py-2">
+                    <div className="space-y-1">
+                      <div className="h-4 bg-[#d8d8dc] rounded w-24"></div>
+                      <div className="h-3 bg-[#d8d8dc] rounded w-16"></div>
+                    </div>
+                    <div className="h-4 bg-[#d8d8dc] rounded w-20"></div>
+                  </div>
+                ))}
+              </div>
+            ) : recentOrders.length === 0 ? (
               <p className="text-[#6e6e73] text-center py-4">Belum ada transaksi</p>
             ) : (
               <div className="overflow-x-auto">
@@ -303,7 +406,19 @@ export default function Dashboard() {
           </div>
 
           <div className="p-6">
-            {activityLogs.length === 0 ? (
+            {loading ? (
+              <div className="space-y-4 animate-pulse">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex gap-4">
+                    <div className="w-10 h-10 bg-[#d8d8dc] rounded flex-shrink-0"></div>
+                    <div className="flex-1 space-y-2 py-1">
+                      <div className="h-4 bg-[#d8d8dc] rounded w-3/4"></div>
+                      <div className="h-3 bg-[#d8d8dc] rounded w-1/2"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : activityLogs.length === 0 ? (
               <div className="text-center py-12">
                 <svg
                   className="w-16 h-16 mx-auto text-[#c8c8cc] mb-4"

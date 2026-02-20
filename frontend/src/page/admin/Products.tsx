@@ -220,11 +220,11 @@ export default function Products() {
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`font-medium ${product.stock <= 5 ? 'text-red-600' : 'text-[#1a1a1e]'}`}
+                          className={`font-medium ${product.stock < 10 ? 'text-red-600' : 'text-[#1a1a1e]'}`}
                         >
                           {product.stock}
                         </span>
-                        {product.stock <= 5 && (
+                        {product.stock < 10 && (
                           <span className="ml-2 text-xs text-red-500">Stok rendah</span>
                         )}
                       </td>

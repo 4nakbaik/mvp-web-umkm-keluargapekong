@@ -33,10 +33,12 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('ALL');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (statusFilter = filter) => {
     try {
-      const res = await api.getOrders();
+      setLoading(true);
+      const res = await api.getOrders(statusFilter);
       setOrders(res.data || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -45,11 +47,31 @@ export default function Orders() {
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+    try {
+      setUpdatingId(orderId);
+      await api.updateOrderStatus(orderId, newStatus);
 
-  const filteredOrders = filter === 'ALL' ? orders : orders.filter((o) => o.status === filter);
+      // Update local state: remove if it doesn't match current filter (except ALL)
+      setOrders((prevOrders) => {
+        if (filter !== 'ALL' && newStatus !== filter) {
+          return prevOrders.filter((order) => order.id !== orderId);
+        }
+        return prevOrders.map((order) =>
+          order.id === orderId ? { ...order, status: newStatus as any } : order
+        );
+      });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Gagal memperbarui status pesanan');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders(filter);
+  }, [filter]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -129,7 +151,7 @@ export default function Orders() {
             </div>
           ))}
         </div>
-      ) : filteredOrders.length === 0 ? (
+      ) : orders.length === 0 ? (
         <div className="bg-white rounded shadow-sm p-12 text-center">
           <svg
             className="w-16 h-16 mx-auto text-[#c8c8cc] mb-4"
@@ -153,7 +175,7 @@ export default function Orders() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredOrders.map((order) => (
+          {orders.map((order) => (
             <div key={order.id} className="bg-white rounded shadow-sm overflow-hidden">
               <div
                 className="p-6 flex items-center justify-between cursor-pointer hover:bg-[#e5e5e8]/50 transition-colors"
@@ -191,17 +213,26 @@ export default function Orders() {
                           ? 'Dibatalkan'
                           : order.status}
                   </span>
-                  <select
-                    value={order.status}
-                    onClick={(e) => e.stopPropagation()}
-                    className="px-3 py-2 text-sm border border-[#c8c8cc] rounded focus:ring-2 focus:ring-[#6e6e73] focus:border-[#6e6e73] outline-none bg-white text-[#1a1a1e]"
-                  >
-                    {statusOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={order.status}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
+                      disabled={updatingId === order.id}
+                      className="appearance-none pl-3 pr-8 py-2 text-sm border border-[#c8c8cc] rounded focus:ring-2 focus:ring-[#6e6e73] focus:border-[#6e6e73] outline-none bg-white text-[#1a1a1e] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {statusOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    {updatingId === order.id && (
+                      <div className="absolute right-8 top-1/2 -translate-y-1/2">
+                        <div className="w-3 h-3 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </div>
                   <svg
                     className={`w-5 h-5 text-[#9e9ea3] transition-transform ${expandedOrder === order.id ? 'rotate-180' : ''}`}
                     fill="none"

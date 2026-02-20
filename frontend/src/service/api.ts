@@ -56,9 +56,11 @@ export const api = {
     return withDelay(Promise.resolve(res.data));
   },
 
-  async getOrders() {
+  async getOrders(status?: string) {
+    const params = status && status !== 'ALL' ? { status } : {};
     const res = await axios.get(`${API_BASE_URL}/orders`, {
       headers: { ...getAuthHeader() },
+      params,
     });
     return withDelay(Promise.resolve(res.data));
   },
@@ -67,6 +69,15 @@ export const api = {
     const res = await axios.get(`${API_BASE_URL}/orders/${id}/receipt`, {
       headers: { ...getAuthHeader() },
     });
+    return withDelay(Promise.resolve(res.data));
+  },
+
+  async updateOrderStatus(id: string, status: string) {
+    const res = await axios.patch(
+      `${API_BASE_URL}/orders/${id}/status`,
+      { status },
+      { headers: { ...getAuthHeader() } }
+    );
     return withDelay(Promise.resolve(res.data));
   },
 
@@ -122,7 +133,7 @@ export const api = {
 
   // Dashboard
   async getDashboardStats() {
-    const res = await axios.get(`${API_BASE_URL}/dashboard`, {
+    const res = await axios.get(`${API_BASE_URL}/dashboard/summary`, {
       headers: { ...getAuthHeader() },
     });
     return withDelay(Promise.resolve(res.data));
