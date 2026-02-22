@@ -31,12 +31,12 @@ export default function ProfileDropdown() {
       {/* Profile Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#684c38] transition-colors"
       >
-        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+        <div className="w-8 h-8 bg-[#c17d4d] rounded-full flex items-center justify-center text-white font-semibold text-sm">
           {avatarLetter}
         </div>
-        <span className="text-gray-700 text-sm font-medium hidden sm:block max-w-37.5 truncate">
+        <span className="text-white text-sm font-medium hidden sm:block max-w-37.5 truncate">
           {user?.name}
         </span>
         <svg

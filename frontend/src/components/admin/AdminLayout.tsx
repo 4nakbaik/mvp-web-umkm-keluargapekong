@@ -38,13 +38,41 @@ export default function AdminLayout() {
   const [allOrders, setAllOrders] = useState<SearchOrder[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
 
+  // Notification State
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) {
       navigate('/admin/login');
     }
   }, [isAuthenticated, isAdmin, navigate]);
 
-  // Fetch search data on mount
+  // Load and sync Notifications
+  const loadNotifications = async () => {
+    try {
+      const statsRes = await api.getDashboardStats();
+      const lowStockProducts = statsRes.data?.lowStockProducts || [];
+
+      const storedRead = JSON.parse(localStorage.getItem('read_notifications') || '[]');
+      const storedDeleted = JSON.parse(localStorage.getItem('deleted_notifications') || '[]');
+
+      const generatedNotifs = lowStockProducts
+        .filter((p: any) => !storedDeleted.includes(p.id))
+        .map((p: any) => ({
+          id: p.id,
+          message: `Stok ${p.name} sisa ${p.stock}! Segera isi ulang.`,
+          isRead: storedRead.includes(p.id),
+        }));
+
+      setNotifications(generatedNotifs);
+      setUnreadCount(generatedNotifs.filter((n: any) => !n.isRead).length);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  };
+
+  // Fetch search data & notifications on mount
   useEffect(() => {
     const fetchSearchData = async () => {
       try {
@@ -55,8 +83,94 @@ export default function AdminLayout() {
         console.error('Error fetching search data:', err);
       }
     };
-    if (isAuthenticated && isAdmin) fetchSearchData();
+    if (isAuthenticated && isAdmin) {
+      fetchSearchData();
+      loadNotifications();
+
+      // Take Out Timeout Checker (every 5 mins)
+      const checkTakeOutTimeouts = async () => {
+        try {
+          const ordersRes = await api.getOrders('PENDING');
+          const pendingOrders = ordersRes.data || [];
+
+          const now = Date.now();
+          const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+
+          for (const order of pendingOrders) {
+            // 0. Auto-Lunas for DINE_IN (Since Staff gets 403 on Cart Page)
+            if (order.paymentType && order.paymentType.includes('DINE_IN')) {
+              try {
+                await api.updateOrderStatus(order.id, 'PAID');
+              } catch (e) {
+                console.error('Failed to auto-update Dine In order:', e);
+              }
+              continue; // Skip Take-Out checks
+            }
+
+            // 1. Only process if it's a TAKE_OUT order
+            if (order.paymentType && order.paymentType.includes('TAKE_OUT')) {
+              const orderTime = new Date(order.createdAt).getTime();
+              if (now - orderTime > FOUR_HOURS_MS) {
+                // 1. Cancel the order
+                await api.updateOrderStatus(order.id, 'CANCELLED');
+
+                // 2. Revert the stock for each item
+                for (const item of order.items) {
+                  if (item.product && item.productId) {
+                    const currentProductRes = await api.getProducts(); // Fetch latest to get real stock
+                    const productsList = currentProductRes.data || [];
+                    const matchedProduct = productsList.find((p: any) => p.id === item.productId);
+
+                    if (matchedProduct) {
+                      const newStock = matchedProduct.stock + item.quantity;
+                      await api.put(`/api/products/${item.productId}`, { stock: newStock });
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error checking take out timeouts:', err);
+        }
+      };
+
+      // Check on load
+      checkTakeOutTimeouts();
+
+      // Auto-refresh notifications every minute if panel is open
+      const notifInterval = setInterval(loadNotifications, 60000);
+      const timeoutInterval = setInterval(checkTakeOutTimeouts, 5 * 60000); // Check every 5 mins
+
+      return () => {
+        clearInterval(notifInterval);
+        clearInterval(timeoutInterval);
+      };
+    }
   }, [isAuthenticated, isAdmin]);
+
+  const markNotificationsAsRead = () => {
+    const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
+    if (unreadIds.length > 0) {
+      const storedRead = JSON.parse(localStorage.getItem('read_notifications') || '[]');
+      const newRead = Array.from(new Set([...storedRead, ...unreadIds])); // Avoid duplicates
+      localStorage.setItem('read_notifications', JSON.stringify(newRead));
+
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    }
+  };
+
+  const deleteNotification = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Biar gak nutup dropdown kalau diklik
+    const storedDeleted = JSON.parse(localStorage.getItem('deleted_notifications') || '[]');
+    localStorage.setItem('deleted_notifications', JSON.stringify([...storedDeleted, id]));
+
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    setUnreadCount((prev) =>
+      notifications.find((n) => n.id === id && !n.isRead) ? prev - 1 : prev
+    );
+  };
 
   // Close search dropdown on outside click
   useEffect(() => {
@@ -573,8 +687,12 @@ export default function AdminLayout() {
             <div className="relative">
               <button
                 onClick={() => {
-                  setShowNotifDropdown(!showNotifDropdown);
+                  const willShow = !showNotifDropdown;
+                  setShowNotifDropdown(willShow);
                   setShowProfileDropdown(false);
+                  if (willShow && unreadCount > 0) {
+                    markNotificationsAsRead();
+                  }
                 }}
                 className="relative p-2.5 rounded-xl text-slate-400 hover:bg-[#f5f3f2] hover:text-[#1a1a1e] transition-all duration-200"
               >
@@ -586,18 +704,100 @@ export default function AdminLayout() {
                     d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                   />
                 </svg>
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+                )}
               </button>
 
               {showNotifDropdown && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setShowNotifDropdown(false)} />
-                  <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl z-40 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-slate-100">
+                  <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-40 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                       <p className="text-sm font-semibold text-slate-800">Notifikasi</p>
+                      <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium">
+                        {notifications.length}
+                      </span>
                     </div>
-                    <div className="py-6 text-center text-sm text-slate-400">
-                      Tidak ada notifikasi baru
+
+                    <div className="max-h-[360px] overflow-y-auto custom-scrollbar">
+                      {notifications.length === 0 ? (
+                        <div className="py-8 text-center px-4">
+                          <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg
+                              className="w-6 h-6 text-slate-300"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                              />
+                            </svg>
+                          </div>
+                          <p className="text-sm font-medium text-slate-600">Tidak ada notifikasi</p>
+                          <p className="text-xs text-slate-400 mt-1">Stok produk Anda aman.</p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-100">
+                          {notifications.map((notif) => (
+                            <div
+                              key={notif.id}
+                              className={`p-4 flex gap-3 hover:bg-slate-50 transition-colors group ${!notif.isRead ? 'bg-red-50/30' : ''}`}
+                            >
+                              <div
+                                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${!notif.isRead ? 'bg-red-100 text-red-500' : 'bg-slate-100 text-slate-400'}`}
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                  />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className={`text-sm ${!notif.isRead ? 'font-semibold text-slate-800' : 'font-medium text-slate-600'} leading-snug`}
+                                >
+                                  Stok Menipis
+                                </p>
+                                <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                                  {notif.message}
+                                </p>
+                              </div>
+                              <button
+                                onClick={(e) => deleteNotification(e, notif.id)}
+                                className="w-6 h-6 rounded flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                title="Hapus notifikasi"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>

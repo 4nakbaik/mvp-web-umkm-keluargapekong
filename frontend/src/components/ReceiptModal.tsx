@@ -145,7 +145,23 @@ export default function ReceiptModal({ orderId, onClose }: ReceiptModalProps) {
             <span>{fmtNum(receipt.totalAmount)}</span>
           </div>
           <div className="flex justify-between">
-            <span>{receipt.paymentType} :</span>
+            <span>
+              {receipt.paymentType
+                ? receipt.paymentType
+                    .replace(/ - TAKE_OUT( \([^)]+\))?/, '')
+                    .replace(' - DINE_IN', '') +
+                  (receipt.paymentType.includes('TAKE_OUT')
+                    ? ` (Take Out${
+                        receipt.paymentType.match(/\(([^)]+)\)/)
+                          ? ' - ' + receipt.paymentType.match(/\(([^)]+)\)/)?.[1]
+                          : ''
+                      })`
+                    : receipt.paymentType.includes('DINE_IN')
+                      ? ' (Dine In)'
+                      : '')
+                : 'CASH'}{' '}
+              :
+            </span>
             <span>{fmtNum(receipt.totalAmount)}</span>
           </div>
         </div>

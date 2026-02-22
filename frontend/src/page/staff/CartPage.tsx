@@ -57,6 +57,13 @@ export default function CartPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
 
+  // Order Type (Dine In vs Take Out)
+  const [orderType, setOrderType] = useState<'DINE_IN' | 'TAKE_OUT'>('DINE_IN');
+  const [takeOutOption, setTakeOutOption] = useState<'GOJEK' | 'GRAB' | 'MAXIM' | 'LAINNYA'>(
+    'LAINNYA'
+  );
+  const [showTakeOutDropdown, setShowTakeOutDropdown] = useState(false);
+
   // Payment Type
   const [paymentType, setPaymentType] = useState('CASH');
   const PAYMENT_METHODS = ['CASH', 'QRIS', 'GOPAY', 'DANA', 'MBanking'];
@@ -64,6 +71,13 @@ export default function CartPage() {
   // MBanking bank selection
   const [selectedBank, setSelectedBank] = useState('');
   const [showBankDropdown, setShowBankDropdown] = useState(false);
+
+  const TAKE_OUT_PLATFORMS = [
+    { id: 'GOJEK', name: 'Gojek', color: '#00AA13' },
+    { id: 'GRAB', name: 'Grab', color: '#00B14F' },
+    { id: 'MAXIM', name: 'Maxim', color: '#FCD116' }, // closer to maxim yellow
+    { id: 'LAINNYA', name: 'Lainnya (Bawa Sendiri)', color: '#8B7355' },
+  ];
 
   const BANK_LIST = [
     { id: 'seabank', name: 'SeaBank', color: '#00A5CF', logo: LogoSeabank },
@@ -172,9 +186,16 @@ export default function CartPage() {
         customerId = customerRes.data.id;
       }
 
-      // Build payment type string (append bank name for MBanking)
-      const finalPaymentType =
+      // Build payment type string (append bank name for MBanking and Order Type)
+      let basePaymentType =
         paymentType === 'MBanking' && selectedBank ? `MBanking - ${selectedBank}` : paymentType;
+
+      let finalPaymentType = basePaymentType;
+      if (orderType === 'TAKE_OUT') {
+        finalPaymentType = `${basePaymentType} - TAKE_OUT (${takeOutOption})`;
+      } else {
+        finalPaymentType = `${basePaymentType} - DINE_IN`;
+      }
 
       const orderPayload: any = {
         customerId,
@@ -189,19 +210,33 @@ export default function CartPage() {
       }
       const orderRes = await api.createOrder(orderPayload);
 
-      if (orderRes.data?.id) {
+      let newOrderId = null;
+      // Axios unwraps the HTTP response to `orderRes.data`.
+      // The backend returns `{ status: 'success', data: { ...newOrder } }`.
+      // So the actual order object is at `orderRes.data.data`.
+      const responseData = orderRes.data?.data || orderRes.data;
+
+      if (responseData?.id) {
+        newOrderId = responseData.id;
+        setCreatedOrderId(responseData.id);
+        if (responseData.qrCode) setOrderQrCode(responseData.qrCode);
+      } else if (orderRes.data?.id) {
+        // Fallback in case backend structure changes
+        newOrderId = orderRes.data.id;
         setCreatedOrderId(orderRes.data.id);
         if (orderRes.data.qrCode) setOrderQrCode(orderRes.data.qrCode);
-      } else if (orderRes.data?.code) {
-        setCreatedOrderId(orderRes.data.id);
-        if (orderRes.data.qrCode) setOrderQrCode(orderRes.data.qrCode);
-      } else if (orderRes.data?.data?.id) {
-        setCreatedOrderId(orderRes.data.data.id);
-        if (orderRes.data.data.qrCode) setOrderQrCode(orderRes.data.data.qrCode);
+      }
+
+      // Automatically set order to PAID if it's DINE_IN
+      if (orderType === 'DINE_IN' && newOrderId) {
+        try {
+          await api.updateOrderStatus(newOrderId, 'PAID');
+        } catch (statusErr) {
+          console.error('Gagal update status otomatis ke PAID', statusErr);
+        }
       }
 
       // Use backend's totalAmount (includes discount & tax) for QRIS display
-      const responseData = orderRes.data?.data || orderRes.data;
       setLastOrderTotal(Number(responseData?.totalAmount) || getTotal());
       clearCart();
       setCustomerName('');
@@ -526,6 +561,179 @@ export default function CartPage() {
                   Walk-in
                 </button>
               </div>
+            </div>
+
+            {/* Order Type Toggle */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-slate-700">Tipe Pesanan</label>
+              <div className="flex rounded border border-slate-300 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setOrderType('DINE_IN')}
+                  className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                    orderType === 'DINE_IN'
+                      ? 'bg-[#5c4033] text-white'
+                      : 'bg-white text-[#6c5347] hover:bg-[#efeceb]'
+                  }`}
+                >
+                  Di Tempat (Dine In)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderType('TAKE_OUT')}
+                  className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                    orderType === 'TAKE_OUT'
+                      ? 'bg-[#5c4033] text-white'
+                      : 'bg-white text-[#6c5347] hover:bg-[#efeceb]'
+                  }`}
+                >
+                  Bawa Pulang (Take Out)
+                </button>
+              </div>
+
+              {/* Take Out Options Dropdown */}
+              {orderType === 'TAKE_OUT' && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Platform Take Out
+                  </label>
+                  <div
+                    className="border border-[#cec6c2] rounded-lg overflow-hidden"
+                    style={{ animation: 'slideDown 0.25s ease-out' }}
+                  >
+                    {/* Dropdown Header */}
+                    <button
+                      type="button"
+                      onClick={() => setShowTakeOutDropdown(!showTakeOutDropdown)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#5c4033] to-[#7a5a4a] text-white"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+                            />
+                          </svg>
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-semibold">Tujuan Pengiriman</p>
+                          <p className="text-xs text-white/70">
+                            {TAKE_OUT_PLATFORMS.find((p) => p.id === takeOutOption)?.name}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-green-400 flex items-center justify-center">
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                        <svg
+                          className={`w-4 h-4 transition-transform duration-200 ${showTakeOutDropdown ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </div>
+                    </button>
+
+                    {/* Platform List */}
+                    {showTakeOutDropdown && (
+                      <div className="bg-white divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                        {TAKE_OUT_PLATFORMS.map((platform) => (
+                          <button
+                            key={platform.id}
+                            type="button"
+                            onClick={() => {
+                              setTakeOutOption(platform.id as any);
+                              setShowTakeOutDropdown(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-4 py-3 transition-all duration-150 hover:bg-[#faf8f7] ${
+                              takeOutOption === platform.id ? 'bg-[#efeceb]' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="w-9 h-9 rounded-lg flex items-center justify-center border border-slate-100"
+                                style={{ backgroundColor: `${platform.color}15` }}
+                              >
+                                <svg
+                                  className="w-5 h-5"
+                                  style={{ color: platform.color }}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  {platform.id === 'LAINNYA' ? (
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={1.5}
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
+                                  ) : (
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={1.5}
+                                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                                    />
+                                  )}
+                                </svg>
+                              </div>
+                              <div className="text-left">
+                                <p className="text-sm font-medium text-slate-800">
+                                  {platform.name}
+                                </p>
+                              </div>
+                            </div>
+                            {takeOutOption === platform.id && (
+                              <svg
+                                className="w-5 h-5 text-[#5c4033]"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2.5}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Member Search / Walk-in Form */}

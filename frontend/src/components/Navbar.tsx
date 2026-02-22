@@ -14,7 +14,7 @@ export default function Navbar() {
         <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-white">
           <img src={Logo} alt="RM Pekong Logo" className="w-full h-full object-cover" />
         </div>
-        <h1 className="text-lg font-bold text-[#FFF8E7]">PEKONGFAM</h1>
+        <h1 className="text-lg font-bold text-[#FFF8E7]">P E K O N G F A M</h1>
       </Link>
 
       <div className="flex gap-2 items-center">

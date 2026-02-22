@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import Navbar from '../components/Navbar';
 import { api } from '../service/api';
 import { Card } from '../components/Card';
+import Banner from '../assets/banner.png'
 
 interface Product {
   id: string;
@@ -80,10 +81,8 @@ export default function Homepage() {
       <Navbar />
 
       {/* Hero Section (placeholder) */}
-      <section className="w-full h-64 sm:h-80 lg:h-96 mt-6 bg-[#F4C480]/20 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-4xl font-bold text-[#4A3728] mb-2">Selamat Datang</h2>
-          <p className="text-[#4A3728]/70">Temukan produk terbaik dari Keluarga Pekong</p>
+      <section className="w-full h-64 sm:h-80 lg:h-150 flex items-center justify-center p-5 " >
+        <div className="text-center w-full h-full bg-cover bg-no-repeat rounded" style={{backgroundImage: `url(${Banner})`}}>
         </div>
       </section>
 

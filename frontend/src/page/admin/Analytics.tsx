@@ -57,23 +57,23 @@ interface CustomerData {
 
 // ============ COLORS ============
 const CHART_COLORS = [
-  '#1a1a1e',
-  '#555559',
-  '#8B8B90',
-  '#3d3d42',
-  '#6e6e73',
-  '#2a2a2e',
-  '#9e9ea3',
-  '#4a4a4e',
+  '#FF6384', // Red/Pink
+  '#36A2EB', // Blue
+  '#FFCE56', // Yellow
+  '#4BC0C0', // Teal
+  '#9966FF', // Purple
+  '#FF9F40', // Orange
+  '#C9CBCF', // Grey
+  '#7C4DFF', // Deep Purple
 ];
 
-const PIE_COLORS = ['#1a1a1e', '#555559', '#8B8B90', '#b5b5ba', '#d8d8dc'];
+const PIE_COLORS = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
 
 const PAYMENT_COLORS: Record<string, string> = {
-  CASH: '#1a1a1e',
-  QRIS: '#555559',
-  MBANKING: '#8B8B90',
-  TRANSFER: '#6e6e73',
+  CASH: '#4BC0C0', // Teal
+  QRIS: '#36A2EB', // Blue
+  MBANKING: '#9966FF', // Purple
+  TRANSFER: '#FF9F40', // Orange
 };
 
 // ============ HELPERS ============
@@ -342,8 +342,8 @@ export default function Analytics() {
               onClick={() => setPeriod(opt.value)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 period === opt.value
-                  ? 'bg-[#1a1a1e] text-white shadow-md'
-                  : 'text-slate-500 hover:text-[#1a1a1e] hover:bg-slate-50'
+                  ? 'bg-[#36A2EB] text-white shadow-md'
+                  : 'text-slate-500 hover:text-[#36A2EB] hover:bg-slate-50'
               }`}
             >
               {opt.label}
@@ -368,7 +368,7 @@ export default function Analytics() {
                 />
               </svg>
             ),
-            color: 'bg-[#1a1a1e]',
+            color: 'bg-[#36A2EB]',
           },
           {
             label: 'Total Pesanan',
@@ -383,7 +383,7 @@ export default function Analytics() {
                 />
               </svg>
             ),
-            color: 'bg-[#3d3d42]',
+            color: 'bg-[#9966FF]',
           },
           {
             label: 'Rata-rata Order',
@@ -398,7 +398,7 @@ export default function Analytics() {
                 />
               </svg>
             ),
-            color: 'bg-[#555559]',
+            color: 'bg-[#4BC0C0]',
           },
           {
             label: 'Total Diskon',
@@ -413,7 +413,7 @@ export default function Analytics() {
                 />
               </svg>
             ),
-            color: 'bg-[#8B8B90]',
+            color: 'bg-[#FF9F40]',
           },
         ].map((card) => (
           <div
@@ -444,8 +444,8 @@ export default function Analytics() {
             <AreaChart data={revenueByDay}>
               <defs>
                 <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#1a1a1e" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#1a1a1e" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#36A2EB" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#36A2EB" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f4" />
@@ -468,11 +468,11 @@ export default function Analytics() {
                 type="monotone"
                 dataKey="revenue"
                 name="Revenue"
-                stroke="#1a1a1e"
+                stroke="#36A2EB"
                 strokeWidth={2.5}
                 fill="url(#revenueGradient)"
                 dot={false}
-                activeDot={{ r: 5, fill: '#1a1a1e', stroke: '#fff', strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: '#36A2EB', stroke: '#fff', strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -544,7 +544,7 @@ export default function Analytics() {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Tooltip formatter={(value: any) => formatCurrency(Number(value) || 0)} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="w-[40%] space-y-2">
@@ -680,19 +680,19 @@ export default function Analytics() {
                 type="monotone"
                 dataKey="newCustomers"
                 name="Customer Baru"
-                stroke="#1a1a1e"
+                stroke="#36A2EB"
                 strokeWidth={2.5}
-                dot={{ r: 4, fill: '#1a1a1e', stroke: '#fff', strokeWidth: 2 }}
+                dot={{ r: 4, fill: '#36A2EB', stroke: '#fff', strokeWidth: 2 }}
                 activeDot={{ r: 6 }}
               />
               <Line
                 type="monotone"
                 dataKey="members"
                 name="Member"
-                stroke="#8B8B90"
+                stroke="#9966FF"
                 strokeWidth={2}
                 strokeDasharray="5 5"
-                dot={{ r: 4, fill: '#8B8B90', stroke: '#fff', strokeWidth: 2 }}
+                dot={{ r: 4, fill: '#9966FF', stroke: '#fff', strokeWidth: 2 }}
               />
             </LineChart>
           </ResponsiveContainer>

@@ -73,6 +73,20 @@ export default function Orders() {
     fetchOrders(filter);
   }, [filter]);
 
+  // Auto-PAID for DINE_IN orders (Admin handles this since Staff lacks permissions)
+  useEffect(() => {
+    const pendingDineInOrders = orders.filter(
+      (o) => o.status === 'PENDING' && o.paymentType?.includes('DINE_IN')
+    );
+
+    pendingDineInOrders.forEach((order) => {
+      // Small delay to prevent rapid overlapping requests during initial load
+      setTimeout(() => {
+        handleStatusUpdate(order.id, 'PAID');
+      }, 500);
+    });
+  }, [orders]);
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -213,6 +227,29 @@ export default function Orders() {
                           ? 'Dibatalkan'
                           : order.status}
                   </span>
+                  {/* Order Type Badge */}
+                  {(() => {
+                    const isTakeOut = order.paymentType?.includes('TAKE_OUT');
+                    const isDineIn = order.paymentType?.includes('DINE_IN');
+                    if (isTakeOut) {
+                      // Extract the option in parentheses if it exists
+                      const match = order.paymentType?.match(/\(([^)]+)\)/);
+                      const option = match ? ` (${match[1]})` : '';
+                      return (
+                        <span className="px-3 py-1.5 rounded-full text-xs font-medium border bg-blue-100 text-blue-700 border-blue-200">
+                          Take Out{option}
+                        </span>
+                      );
+                    }
+                    if (isDineIn) {
+                      return (
+                        <span className="px-3 py-1.5 rounded-full text-xs font-medium border bg-green-100 text-green-700 border-green-200">
+                          Dine In
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                   <div className="relative">
                     <select
                       value={order.status}
@@ -318,8 +355,19 @@ export default function Orders() {
                         <span>{formatPrice(Number(order.totalAmount) || order.total || 0)}</span>
                       </div>
                       <div className="flex justify-between text-xs text-[#9e9ea3] pt-1">
-                        <span>Pembayaran</span>
-                        <span className="font-medium">{order.paymentType || 'CASH'}</span>
+                        <span>Tipe Pesanan & Pembayaran</span>
+                        <span className="font-medium">
+                          {order.paymentType
+                            ? order.paymentType
+                                .replace(/ - TAKE_OUT( \([^)]+\))?/, '')
+                                .replace(' - DINE_IN', '') +
+                              (order.paymentType.includes('TAKE_OUT')
+                                ? ` (Take Out${order.paymentType.match(/\(([^)]+)\)/) ? ' - ' + order.paymentType.match(/\(([^)]+)\)/)?.[1] : ''})`
+                                : order.paymentType.includes('DINE_IN')
+                                  ? ' (Dine In)'
+                                  : '')
+                            : 'CASH'}
+                        </span>
                       </div>
                     </div>
                   </div>

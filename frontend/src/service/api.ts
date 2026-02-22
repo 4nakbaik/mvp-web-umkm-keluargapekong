@@ -190,4 +190,12 @@ export const api = {
     });
     return withDelay(Promise.resolve(res.data));
   },
+
+  // Raw methods
+  async put(path: string, data: any) {
+    const res = await axios.put(`${API_BASE_URL.replace('/api', '')}${path}`, data, {
+      headers: { ...getAuthHeader() },
+    });
+    return withDelay(Promise.resolve(res.data));
+  },
 };

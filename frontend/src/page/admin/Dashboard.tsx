@@ -42,8 +42,6 @@ export default function Dashboard() {
     totalOrders: 0,
     totalRevenue: 0,
     lowStockProducts: [] as { id: string; name: string; stock: number }[],
-    activeVouchersCount: 0,
-    expiredVouchersCount: 0,
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
@@ -61,20 +59,12 @@ export default function Dashboard() {
 
         console.log('Dashboard Res:', dashboardRes); // Debugging
 
-        const {
-          totalRevenue,
-          totalOrders,
-          lowStockProducts,
-          activeVouchersCount,
-          expiredVouchersCount,
-        } = dashboardRes.data;
+        const { totalRevenue, totalOrders, lowStockProducts } = dashboardRes.data;
 
         setStats({
           totalOrders: totalOrders || 0,
           totalRevenue: totalRevenue || 0,
           lowStockProducts: lowStockProducts || [],
-          activeVouchersCount: activeVouchersCount || 0,
-          expiredVouchersCount: expiredVouchersCount || 0,
         });
 
         // Backend doesn't return recentOrders in summary, so we slice from getOrders
@@ -193,7 +183,7 @@ export default function Dashboard() {
         </div>
 
         {/* Revenue */}
-        <div className="bg-white rounded p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded p-6 shadow-sm hover:shadow-md transition-shadow col-span-2">
           {loading ? (
             <div className="animate-pulse">
               <div className="h-12 w-12 bg-[#d8d8dc] rounded mb-4"></div>
@@ -229,94 +219,11 @@ export default function Dashboard() {
             </>
           )}
         </div>
-
-        {/* Voucher Stats (Replaces Low Stock Alert) */}
-        <div className="bg-white rounded p-6 shadow-sm hover:shadow-md transition-shadow">
-          {loading ? (
-            <div className="animate-pulse">
-              <div className="h-12 w-12 bg-[#d8d8dc] rounded mb-4"></div>
-              <div className="h-8 bg-[#d8d8dc] rounded w-16 mb-2"></div>
-              <div className="h-4 bg-[#d8d8dc] rounded w-24"></div>
-            </div>
-          ) : (
-            <>
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-[#e5e5e8] text-[#555559] rounded mb-4 shadow-lg">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-                  />
-                </svg>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-bold text-[#1a1a1e]">{stats.activeVouchersCount}</p>
-                <span className="text-sm text-green-600 font-medium">Aktif</span>
-                <span className="text-gray-300">|</span>
-                <p className="text-xl font-semibold text-[#6e6e73]">{stats.expiredVouchersCount}</p>
-                <span className="text-sm text-[#9e9ea3]">Exp</span>
-              </div>
-              <p className="text-[#6e6e73] mt-1">Status Voucher</p>
-            </>
-          )}
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-        {/* Low Stock Products (New) */}
-        <div className="bg-white rounded shadow-sm flex flex-col h-full">
-          <div className="p-6 border-b border-[#e5e5e8]">
-            <h2 className="text-xl font-semibold text-[#1a1a1e]">Stok Menipis</h2>
-            <p className="text-sm text-[#6e6e73] mt-1">Produk dengan stok kurang dari 10</p>
-          </div>
-          <div className="p-6 flex-1 overflow-auto">
-            {loading ? (
-              <div className="space-y-3 animate-pulse">
-                {[...Array(3)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex justify-between items-center p-3 border border-gray-100 rounded"
-                  >
-                    <div className="h-4 bg-[#d8d8dc] rounded w-32"></div>
-                    <div className="h-6 bg-[#d8d8dc] rounded w-8"></div>
-                  </div>
-                ))}
-              </div>
-            ) : stats.lowStockProducts.length === 0 ? (
-              <div className="text-center py-6 text-green-600">
-                <svg
-                  className="w-12 h-12 mx-auto mb-2 opacity-50"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <p>Semua stok aman</p>
-              </div>
-            ) : (
-              <ul className="space-y-3">
-                {stats.lowStockProducts.map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex justify-between items-center p-3 bg-red-50 border border-red-100 rounded"
-                  >
-                    <span className="font-medium text-[#1a1a1e] truncate pr-2">{p.name}</span>
-                    <span className="px-2.5 py-1 bg-white text-red-600 font-bold rounded text-sm border border-red-200">
-                      {p.stock}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Recent Orders Section (New) */}
+
         {/* Recent Orders Section (New) */}
         <div className="bg-white rounded shadow-sm">
           <div className="p-6 border-b border-[#e5e5e8]">
@@ -439,7 +346,7 @@ export default function Dashboard() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4 max-h-96 overflow-auto custom-scrollbar">
+              <div className="space-y-4 max-h-96 overflow-auto custom-scrollbar [scrollbar-width:none]">
                 {activityLogs.map((log) => {
                   const { icon, color } = getActionIcon(log.action);
                   return (
