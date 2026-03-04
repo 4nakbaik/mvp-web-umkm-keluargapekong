@@ -5,7 +5,7 @@ services:
     container_name: umkm_db
     restart: always
     env_file:
-      - ./backend/.env 
+      - ./backend/.env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -23,15 +23,15 @@ services:
   # --- BE ---
   backend:
     container_name: umkm_backend
-    build: 
-      context: ./backend 
+    build:
+      context: ./backend
       dockerfile: Dockerfile
     restart: always
     ports:
       - "5000:5000"
     depends_on:
       db:
-        condition: service_healthy 
+        condition: service_healthy
     env_file:
       - ./backend/.env
     environment:
@@ -50,10 +50,11 @@ services:
       - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:5000/api/v1
+      - VITE_BACKEND_URL=http://localhost:5000
     volumes:
       - ./frontend:/app:Z
       - /app/node_modules
-    stdin_open: true 
+    stdin_open: true
     tty: true
 
 volumes:
