@@ -3,6 +3,7 @@ import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../hooks/useAuthStore';
 import { api } from '../../service/api';
 import Logo from '../../assets/Logo.png';
+import { getImageUrl } from '../../utils/imageHelper';
 
 interface SearchProduct {
   id: string;
@@ -546,7 +547,7 @@ export default function AdminLayout() {
                               >
                                 {product.imageUrl ? (
                                   <img
-                                    src={product.imageUrl}
+                                    src={getImageUrl(product.imageUrl)!}
                                     alt={product.name}
                                     className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                                   />

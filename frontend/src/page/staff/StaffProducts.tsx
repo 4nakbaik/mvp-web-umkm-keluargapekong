@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../service/api';
 import { useCartStore } from '../../hooks/useCartStore';
 import { useToastStore } from '../../hooks/useToastStore';
+import { getImageUrl } from '../../utils/imageHelper';
 
 interface Product {
   id: string;
@@ -154,7 +155,7 @@ export default function StaffProducts() {
               >
                 {product.imageUrl ? (
                   <img
-                    src={product.imageUrl}
+                    src={getImageUrl(product.imageUrl)!}
                     alt={product.name}
                     className="w-full h-40 object-cover"
                   />

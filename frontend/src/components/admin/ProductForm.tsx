@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { api } from '../../service/api';
 import { activityLogger } from '../../page/admin/Dashboard';
 import { useToastStore } from '../../hooks/useToastStore';
+import { getImageUrl } from '../../utils/imageHelper';
 
 interface Product {
   id: string;
@@ -28,7 +29,6 @@ const CATEGORIES = [
 ];
 
 export default function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
   const { addToast } = useToastStore();
   const [formData, setFormData] = useState({
     name: product?.name || '',
@@ -39,7 +39,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(
-    product?.imageUrl ? `${BACKEND_URL}${product.imageUrl}` : null
+    product?.imageUrl ? getImageUrl(product.imageUrl) : null
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

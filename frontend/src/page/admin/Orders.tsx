@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../service/api';
+import { getImageUrl } from '../../utils/imageHelper';
 
 interface OrderItem {
   id: string;
@@ -298,7 +299,7 @@ export default function Orders() {
                         >
                           {item.product.imageUrl ? (
                             <img
-                              src={item.product.imageUrl}
+                              src={getImageUrl(item.product.imageUrl)!}
                               alt={item.product.name}
                               className="w-12 h-12 rounded object-cover"
                             />

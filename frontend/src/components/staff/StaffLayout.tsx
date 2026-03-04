@@ -5,6 +5,7 @@ import { useCartStore } from '../../hooks/useCartStore';
 import { useToastStore } from '../../hooks/useToastStore';
 import { api } from '../../service/api';
 import Logo from '../../assets/Logo.png';
+import { getImageUrl } from '../../utils/imageHelper';
 
 interface SearchProduct {
   id: string;
@@ -420,7 +421,7 @@ export default function StaffLayout() {
                               >
                                 {product.imageUrl ? (
                                   <img
-                                    src={product.imageUrl}
+                                    src={getImageUrl(product.imageUrl)!}
                                     alt={product.name}
                                     className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                                   />

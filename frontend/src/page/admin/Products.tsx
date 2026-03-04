@@ -3,6 +3,7 @@ import { api } from '../../service/api';
 import ProductForm from '../../components/admin/ProductForm';
 import { activityLogger } from './Dashboard';
 import { useToastStore } from '../../hooks/useToastStore';
+import { getImageUrl } from '../../utils/imageHelper';
 
 interface Product {
   id: string;
@@ -177,7 +178,7 @@ export default function Products() {
                         <div className="flex items-center gap-4">
                           {product.imageUrl ? (
                             <img
-                              src={product.imageUrl}
+                              src={getImageUrl(product.imageUrl)!}
                               alt={product.name}
                               className="w-14 h-14 rounded object-cover"
                             />

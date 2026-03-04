@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../service/api';
 import { useCartStore } from '../../hooks/useCartStore';
 import { useToastStore } from '../../hooks/useToastStore';
+import { getImageUrl } from '../../utils/imageHelper';
 import ReceiptModal from '../../components/ReceiptModal';
 
 // Bank logos
@@ -421,7 +422,7 @@ export default function CartPage() {
                 >
                   {item.product.imageUrl ? (
                     <img
-                      src={item.product.imageUrl}
+                      src={getImageUrl(item.product.imageUrl)!}
                       alt={item.product.name}
                       className="w-16 h-16 rounded object-cover"
                     />
