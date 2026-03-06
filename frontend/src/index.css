@@ -139,3 +139,41 @@
 .interactive-card:hover .card-img-zoom {
   transform: scale(1.06);
 }
+
+/* ── Hero Slideshow ────────────────────────── */
+.hero-slideshow-container {
+  position: relative;
+}
+
+/* Track: 2 images side-by-side, slides left as a unit */
+.hero-track {
+  display: flex;
+  width: 200%;
+  height: 100%;
+  will-change: transform;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Disable transition for instant snap-back */
+.hero-track.no-transition {
+  transition: none;
+}
+
+/* Each image takes exactly half of track = full container width */
+.hero-slide-img {
+  width: 50%;
+  height: 100%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* Dot indicators */
+.hero-dot {
+  height: 10px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition:
+    width 0.3s ease,
+    background-color 0.3s ease;
+}

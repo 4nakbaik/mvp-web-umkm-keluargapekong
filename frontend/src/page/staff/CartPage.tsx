@@ -16,6 +16,11 @@ import LogoBSI from '../../assets/bsi.webp';
 import LogoPermata from '../../assets/permata.png';
 import LogoCIMB from '../../assets/Cimb niaga.png';
 
+// Platform logos
+import GojekLogo from '../../assets/gojek.png';
+import GrabLogo from '../../assets/grab.png';
+import MaximLogo from '../../assets/maxim.jpg';
+
 interface Member {
   id: string;
   name: string;
@@ -74,10 +79,10 @@ export default function CartPage() {
   const [showBankDropdown, setShowBankDropdown] = useState(false);
 
   const TAKE_OUT_PLATFORMS = [
-    { id: 'GOJEK', name: 'Gojek', color: '#00AA13' },
-    { id: 'GRAB', name: 'Grab', color: '#00B14F' },
-    { id: 'MAXIM', name: 'Maxim', color: '#FCD116' }, // closer to maxim yellow
-    { id: 'LAINNYA', name: 'Lainnya (Bawa Sendiri)', color: '#8B7355' },
+    { id: 'GOJEK', name: 'Gojek', color: '#00AA13', logo: GojekLogo },
+    { id: 'GRAB', name: 'Grab', color: '#00B14F', logo: GrabLogo },
+    { id: 'MAXIM', name: 'Maxim', color: '#FCD116', logo: MaximLogo },
+    { id: 'LAINNYA', name: 'Lainnya (Bawa Sendiri)', color: '#8B7355', logo: null },
   ];
 
   const BANK_LIST = [
@@ -680,32 +685,31 @@ export default function CartPage() {
                           >
                             <div className="flex items-center gap-3">
                               <div
-                                className="w-9 h-9 rounded-lg flex items-center justify-center border border-slate-100"
+                                className="w-9 h-9 rounded-lg flex items-center justify-center border border-slate-100 overflow-hidden"
                                 style={{ backgroundColor: `${platform.color}15` }}
                               >
-                                <svg
-                                  className="w-5 h-5"
-                                  style={{ color: platform.color }}
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  {platform.id === 'LAINNYA' ? (
+                                {platform.logo ? (
+                                  <img
+                                    src={platform.logo}
+                                    alt={platform.name}
+                                    className="w-full h-full object-contain p-1"
+                                  />
+                                ) : (
+                                  <svg
+                                    className="w-5 h-5"
+                                    style={{ color: platform.color }}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
                                     <path
                                       strokeLinecap="round"
                                       strokeLinejoin="round"
                                       strokeWidth={1.5}
                                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                                     />
-                                  ) : (
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={1.5}
-                                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                                    />
-                                  )}
-                                </svg>
+                                  </svg>
+                                )}
                               </div>
                               <div className="text-left">
                                 <p className="text-sm font-medium text-slate-800">

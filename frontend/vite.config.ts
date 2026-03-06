@@ -6,8 +6,8 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    host: true,       
-    strictPort: true, 
+    host: true,
+    strictPort: true,
     port: 5173,
     watch: {
       usePolling: true, //<---Biar Hot reload nye jalan di wsl
@@ -22,6 +22,17 @@ export default defineConfig({
         target: process.env.VITE_API_TARGET || 'http://backend:5000',
         changeOrigin: true,
         secure: false,
+        // Fix: Hapus helmet security headers yang block image loading
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            delete proxyRes.headers['cross-origin-resource-policy'];
+            delete proxyRes.headers['cross-origin-embedder-policy'];
+            delete proxyRes.headers['cross-origin-opener-policy'];
+          });
+          proxy.on('error', (err) => {
+            console.error('[Vite Proxy /uploads] Error:', err.message);
+          });
+        },
       },
     },
   },

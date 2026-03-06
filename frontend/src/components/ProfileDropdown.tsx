@@ -36,7 +36,7 @@ export default function ProfileDropdown() {
         <div className="w-8 h-8 bg-[#c17d4d] rounded-full flex items-center justify-center text-white font-semibold text-sm">
           {avatarLetter}
         </div>
-        <span className="text-white text-sm font-medium hidden sm:block max-w-37.5 truncate">
+        <span className="text-[#53331c] text-sm font-medium hidden sm:block max-w-37.5 truncate">
           {user?.name}
         </span>
         <svg

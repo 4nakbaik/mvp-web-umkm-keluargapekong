@@ -1,10 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import Navbar from '../components/Navbar';
+import HeroSlideshow from '../components/HeroSlideshow';
 import { api } from '../service/api';
 import { Card } from '../components/Card';
 import { useSearchStore } from '../hooks/useSearchStore';
-import Banner from '../assets/banner.png';
 import Logo from '../assets/Logo.png';
+import GojekLogo from '../assets/gojek.png';
+import GrabLogo from '../assets/grab.png';
+import MaximLogo from '../assets/maxim.jpg';
 
 interface Product {
   id: string;
@@ -137,11 +140,38 @@ export default function Homepage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-2">
-        <div
-          className="w-full h-56 sm:h-72 lg:h-100 bg-cover bg-center bg-no-repeat rounded-2xl overflow-hidden shadow-md"
-          style={{ backgroundImage: `url(${Banner})` }}
-        />
+      <HeroSlideshow />
+
+      {/* Take-Out Partners */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 mb-2">
+        <div className="flex flex-col items-center">
+          <p className="text-sm font-semibold text-[#66785F] uppercase tracking-wider mb-6">
+            Pesan juga melalui Take-Out
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
+            <a href="#" className="interactive-btn group">
+              <img
+                src={GojekLogo}
+                alt="Gojek"
+                className="h-8 md:h-10 object-contain grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300"
+              />
+            </a>
+            <a href="#" className="interactive-btn group">
+              <img
+                src={GrabLogo}
+                alt="Grab"
+                className="h-10 md:h-12 object-contain grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300"
+              />
+            </a>
+            <a href="#" className="interactive-btn group rounded-xl overflow-hidden">
+              <img
+                src={MaximLogo}
+                alt="Maxim"
+                className="h-10 md:h-12 object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300 rounded-xl"
+              />
+            </a>
+          </div>
+        </div>
       </section>
 
       {/* Products */}
