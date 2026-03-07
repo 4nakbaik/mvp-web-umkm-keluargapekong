@@ -28,9 +28,16 @@ enum Category {
   LAINNYA
 }
 
-enum DiscountType { // NEW: Tipe Diskon
+enum DiscountType {
   FIXED
   PERCENT
+}
+
+
+enum MutationType {
+  IN       
+  OUT         
+  ADJUSTMENT  
 }
 
 
@@ -45,6 +52,7 @@ model User {
   products         Product[]
   orders           Order[]
   createdCustomers Customer[] @relation("CustomerRegistrar")
+  stockMutations   StockMutation[]
 }
 
 model Customer {
@@ -75,6 +83,7 @@ model Product {
   userId      String
   user        User      @relation(fields: [userId], references: [id])
   orderItems  OrderItem[]
+  stockMutations StockMutation[]
 }
 
 model Voucher { 
@@ -122,3 +131,17 @@ model OrderItem {
   productId String
   product   Product @relation(fields: [productId], references: [id])
 }
+
+model StockMutation {
+  id             String       @id @default(uuid())
+  productId      String
+  product        Product      @relation(fields: [productId], references: [id])
+  userId         String      
+  user           User         @relation(fields: [userId], references: [id])
+  type           MutationType
+  quantity       Int          
+  remainingStock Int          
+  description    String?     
+  createdAt      DateTime     @default(now())
+}
+

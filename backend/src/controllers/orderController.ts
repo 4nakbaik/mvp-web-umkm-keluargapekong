@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import QRCode from 'qrcode'; 
+import { orderQueue } from '../queues/orderQueue';
 
 // --- 1. Buat Checkout (POST) ---
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
@@ -28,6 +29,9 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       
       // Array penampung item untuk bulk insert
       const orderItemsData: any[] = []; 
+      
+      // Generate Kode TRX di awal untuk pencatatan mutasi
+      const trxCode = `TRX-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
       // 1. Loop Barang & Hitung Subtotal
       for (const item of items) {
@@ -48,10 +52,24 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         const itemSubtotal = itemPrice * item.quantity;
         subtotal += itemSubtotal;
 
+        const remainingStock = product.stock - item.quantity;
+
         // Kurangi Stok (Update DB)
         await tx.product.update({
           where: { id: product.id },
-          data: { stock: product.stock - item.quantity }
+          data: { stock: remainingStock }
+        });
+
+        // Catat mutasi barang keluar (OUT)
+        await tx.stockMutation.create({
+          data: {
+            productId: product.id,
+            userId: userId,
+            type: 'OUT',
+            quantity: item.quantity,
+            remainingStock: remainingStock,
+            description: `Terjual pada pesanan ${trxCode}`
+          }
         });
 
         // Masukkan data ke memory array
@@ -117,9 +135,6 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
 
       // 4. Hitung Grand Total
       const totalAmount = taxableAmount + taxAmount;
-
-      // 5. Generate Kode TRX & QR Code
-      const trxCode = `TRX-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       
       // Generate QR Base64 (Isinya link verifikasi/Kode TRX)
       const qrData = trxCode; 
@@ -129,6 +144,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       const newOrder = await tx.order.create({
         data: {
           code: trxCode,
+          status: 'PENDING', // Set default status eksplisit untuk trigger queue
           userId: userId,
           customerId: customerId || null, 
           
@@ -152,9 +168,18 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         }
       });
 
-      // Return order + QR Code agar frontend bisa langsung display
+      // Return order + QR Code biar bisa langsung display
       return { ...newOrder, qrCode: qrCodeBase64 };
     });
+
+    // Delegasi tugas auto-cancel ke background worker 
+    if (result.status === 'PENDING') {
+      await orderQueue.add(
+        'cancel-unpaid-order',
+        { orderId: result.id },
+        { delay: 60000 * 60 * 24 } // 24 jam 
+      );
+    }
 
     res.status(201).json({ status: 'success', data: result });
 
@@ -195,7 +220,7 @@ export const updateOrderStatus = async (req: Request, res: Response, next: NextF
     const { id } = req.params;
     const { status } = req.body; 
 
-    // Validasi input status (Biar gak ngasal stringnye)
+    // Validasi input status 
     if (!['PENDING', 'PAID', 'CANCELLED', 'FAILED'].includes(status)) {
       return res.status(400).json({ message: 'Status tidak valid' });
     }
@@ -257,14 +282,14 @@ export const getOrderReceipt = async (req: Request, res: Response, next: NextFun
 
       // Rincian Keuangan
       subtotal: Number(order.subtotal),
-      discount: Number(order.discountAmount), // Tampilkan diskon
+      discount: Number(order.discountAmount), 
       voucherCode: order.voucher?.code || "-",
-      tax: Number(order.taxAmount),           // Tampilkan pajak
+      tax: Number(order.taxAmount),           
       
       totalAmount: Number(order.totalAmount),
       paymentType: order.paymentType,
       
-      qrCode: qrCodeBase64, // Data QR Image
+      qrCode: qrCodeBase64, 
       footerMessage: "Terima Kasih, Datang Lagi Yaaaa! :)"
     };
 
