@@ -263,9 +263,12 @@ export default function CartPage() {
       }
 
       setTimeout(() => setOrderSuccess(false), 3000);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error creating order response:', error.response?.data);
       console.error('Error creating order:', error);
-      setError('Gagal membuat pesanan. Silakan coba lagi.');
+      
+      const backendMessage = error.response?.data?.message;
+      setError(backendMessage ? `Gagal: ${backendMessage}` : 'Gagal membuat pesanan. Silakan coba lagi.');
     } finally {
       setSubmitting(false);
     }

@@ -198,4 +198,13 @@ export const api = {
     });
     return withDelay(Promise.resolve(res.data));
   },
+
+  // Report
+  async exportStockMutationsExcel() {
+    const res = await axios.get(`${API_BASE_URL}/reports/mutations/excel`, {
+      headers: { ...getAuthHeader() },
+      responseType: 'blob', // Penting untuk file biner
+    });
+    return withDelay(Promise.resolve(res.data));
+  },
 };

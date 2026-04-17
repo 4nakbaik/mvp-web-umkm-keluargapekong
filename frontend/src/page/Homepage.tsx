@@ -142,38 +142,6 @@ export default function Homepage() {
       {/* Hero */}
       <HeroSlideshow />
 
-      {/* Take-Out Partners */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 mb-2">
-        <div className="flex flex-col items-center">
-          <p className="text-sm font-semibold text-[#66785F] uppercase tracking-wider mb-6">
-            Pesan juga melalui Take-Out
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
-            <a href="#" className="interactive-btn group">
-              <img
-                src={GojekLogo}
-                alt="Gojek"
-                className="h-8 md:h-10 object-contain grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300"
-              />
-            </a>
-            <a href="#" className="interactive-btn group">
-              <img
-                src={GrabLogo}
-                alt="Grab"
-                className="h-10 md:h-12 object-contain grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300"
-              />
-            </a>
-            <a href="#" className="interactive-btn group rounded-xl overflow-hidden">
-              <img
-                src={MaximLogo}
-                alt="Maxim"
-                className="h-10 md:h-12 object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300 rounded-xl"
-              />
-            </a>
-          </div>
-        </div>
-      </section>
-
       {/* Products */}
       <section ref={productsSectionRef} className="max-w-screen mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
