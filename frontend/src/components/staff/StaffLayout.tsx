@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../hooks/useAuthStore';
+import Lenis from 'lenis';
 import { useCartStore } from '../../hooks/useCartStore';
 import { useToastStore } from '../../hooks/useToastStore';
 import { api } from '../../service/api';
-import Logo from '../../assets/Logo.png';
 import { getImageUrl } from '../../utils/imageHelper';
+import Sidebar from '../Sidebar';
 
 interface SearchProduct {
   id: string;
@@ -30,8 +31,53 @@ export default function StaffLayout() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+
+  // Initialize Lenis smooth scroll for main container
+  const mainRef = useRef<HTMLDivElement>(null);
+  const lenisRef = useRef<Lenis | null>(null);
+
+  useEffect(() => {
+    if (!mainRef.current) return;
+
+    const lenis = new Lenis({
+      wrapper: mainRef.current,
+      content: mainRef.current.firstElementChild as HTMLElement,
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      touchMultiplier: 2,
+    });
+
+    lenisRef.current = lenis;
+
+    let rafId: number;
+    function raf(time: number) {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    }
+
+    rafId = requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+      cancelAnimationFrame(rafId);
+      lenisRef.current = null;
+    };
+  }, []);
+
+  // Resize Lenis when changing page content
+  useEffect(() => {
+    if (lenisRef.current) {
+      const timer = setTimeout(() => {
+        lenisRef.current?.resize();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname]);
 
   // Global search
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,6 +157,20 @@ export default function StaffLayout() {
 
   const navItems = [
     {
+      path: '/',
+      label: 'Ke Beranda',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+          />
+        </svg>
+      ),
+    },
+    {
       path: '/staff/products',
       label: 'Produk',
       icon: (
@@ -174,135 +234,14 @@ export default function StaffLayout() {
 
   return (
     <div className="h-screen bg-[#f5f3f2] flex overflow-hidden">
-      {/* ============ MOBILE BACKDROP ============ */}
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
-
-      {/* ============ SIDEBAR ============ */}
-      <aside
-        className={`bg-[#f5f3f2] flex flex-col gap-3 p-3 transition-all duration-300 ease-in-out flex-shrink-0
-          ${isCollapsed ? 'w-[88px]' : 'w-[256px]'}
-          fixed md:relative z-50 md:z-auto h-full
-          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
-        `}
-      >
-        {/* Section 1 — Logo */}
-        <div className="bg-white rounded-full shadow-sm border border-slate-100 px-3 py-3 flex-shrink-0">
-          <div
-            className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'justify-center' : ''}`}
-          >
-            <img
-              src={Logo}
-              alt="Logo"
-              className="w-10 h-10 rounded-xl object-cover flex-shrink-0 shadow-sm"
-            />
-            {!isCollapsed && (
-              <div className="overflow-hidden">
-                <p className="text-sm font-bold text-[#5c4033] truncate leading-tight">
-                  Keluarga Pekong
-                </p>
-                <p className="text-[10px] text-slate-400 truncate">Staff Panel</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Section 2 — Navigation */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex-1 overflow-y-auto">
-          <nav className="py-3 px-2">
-            <ul className="space-y-1">
-              {navItems.map((item) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <li key={item.path}>
-                    <Link
-                      to={item.path}
-                      onClick={() => setIsMobileOpen(false)}
-                      className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative ${
-                        isCollapsed ? 'justify-center' : ''
-                      } ${
-                        isActive
-                          ? 'bg-[#5c4033] text-white shadow-lg shadow-[#5c4033]/20'
-                          : 'text-slate-500 hover:bg-[#f5f3f2] hover:text-[#5c4033]'
-                      }`}
-                      title={isCollapsed ? item.label : undefined}
-                    >
-                      <span className="flex-shrink-0">{item.icon}</span>
-                      {!isCollapsed && (
-                        <span className="text-sm font-medium truncate">{item.label}</span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-        </div>
-
-        {/* Section 3 — Toggle + Logout */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-2 py-3 space-y-1 flex-shrink-0">
-          {/* Collapse/Expand toggle */}
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-[#f5f3f2] hover:text-[#5c4033] transition-all duration-200 ${
-              isCollapsed ? 'justify-center' : ''
-            }`}
-            title={isCollapsed ? 'Buka sidebar' : 'Tutup sidebar'}
-          >
-            <svg
-              className="w-5 h-5 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              {isCollapsed ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 19l-7-7 7-7M19 19l-7-7 7-7"
-                />
-              )}
-            </svg>
-            {!isCollapsed && <span className="text-sm font-medium">Tutup</span>}
-          </button>
-
-          {/* Logout */}
-          <button
-            onClick={handleLogoutClick}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all duration-200 ${
-              isCollapsed ? 'justify-center' : ''
-            }`}
-            title={isCollapsed ? 'Logout' : undefined}
-          >
-            <svg
-              className="w-5 h-5 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-            {!isCollapsed && <span className="text-sm font-medium">Logout</span>}
-          </button>
-        </div>
-      </aside>
+      <Sidebar
+        variant="staff"
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+        navItems={navItems}
+      />
 
       {/* ============ MAIN AREA (Top Bar + Content) ============ */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -556,53 +495,13 @@ export default function StaffLayout() {
               })()}
           </div>
 
-          {/* Right — Notification + Profile */}
+          {/* Right — Profile */}
           <div className="flex items-center gap-2 md:gap-3 ml-auto md:ml-6 flex-shrink-0">
-            {/* Notification Bell */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setShowNotifDropdown(!showNotifDropdown);
-                  setShowProfileDropdown(false);
-                }}
-                className="relative p-2.5 rounded-xl text-slate-400 hover:bg-[#f5f3f2] hover:text-[#5c4033] transition-all duration-200"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
-                {/* Notification dot */}
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
-              </button>
-
-              {/* Notification dropdown */}
-              {showNotifDropdown && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setShowNotifDropdown(false)} />
-                  <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl z-40 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-slate-100">
-                      <p className="text-sm font-semibold text-slate-800">Notifikasi</p>
-                    </div>
-                    <div className="py-6 text-center text-sm text-slate-400">
-                      Tidak ada notifikasi baru
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="w-px h-8 bg-slate-200 hidden md:block" />
-
             {/* Profile */}
             <div className="relative">
               <button
                 onClick={() => {
                   setShowProfileDropdown(!showProfileDropdown);
-                  setShowNotifDropdown(false);
                 }}
                 className="flex items-center gap-3 pl-2 pr-3 py-1.5 rounded-xl hover:bg-[#f5f3f2] transition-all duration-200"
               >
@@ -662,8 +561,10 @@ export default function StaffLayout() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto">
-          <Outlet />
+        <main className="flex-1 overflow-auto" ref={mainRef}>
+          <div>
+            <Outlet />
+          </div>
         </main>
       </div>
 

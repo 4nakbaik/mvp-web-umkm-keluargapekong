@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../hooks/useAuthStore';
+import Lenis from 'lenis';
 import { api } from '../../service/api';
-import Logo from '../../assets/Logo.png';
 import { getImageUrl } from '../../utils/imageHelper';
+import Sidebar from '../Sidebar';
 
 interface SearchProduct {
   id: string;
@@ -32,6 +33,52 @@ export default function AdminLayout() {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
+  // Initialize Lenis smooth scroll for main container
+  const mainRef = useRef<HTMLDivElement>(null);
+  const lenisRef = useRef<Lenis | null>(null);
+
+  useEffect(() => {
+    if (!mainRef.current) return;
+
+    const lenis = new Lenis({
+      wrapper: mainRef.current,
+      content: mainRef.current.firstElementChild as HTMLElement,
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      touchMultiplier: 2,
+    });
+
+    lenisRef.current = lenis;
+
+    let rafId: number;
+    function raf(time: number) {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    }
+
+    rafId = requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+      cancelAnimationFrame(rafId);
+      lenisRef.current = null;
+    };
+  }, []);
+
+  // Resize Lenis when changing page content
+  useEffect(() => {
+    if (lenisRef.current) {
+      const timer = setTimeout(() => {
+        lenisRef.current?.resize();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname]);
+
   // Global search
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -45,7 +92,7 @@ export default function AdminLayout() {
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) {
-      navigate('/admin/login');
+      navigate('/login');
     }
   }, [isAuthenticated, isAdmin, navigate]);
 
@@ -216,7 +263,7 @@ export default function AdminLayout() {
 
   const handleLogoutConfirm = () => {
     logout();
-    navigate('/admin/login');
+    navigate('/login');
   };
 
   const navItems = [
@@ -298,135 +345,14 @@ export default function AdminLayout() {
 
   return (
     <div className="h-screen bg-[#f5f3f2] flex overflow-hidden">
-      {/* ============ MOBILE BACKDROP ============ */}
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
-
-      {/* ============ SIDEBAR ============ */}
-      <aside
-        className={`bg-[#f5f3f2] flex flex-col gap-3 p-3 transition-all duration-300 ease-in-out flex-shrink-0
-          ${isCollapsed ? 'w-[88px]' : 'w-[256px]'}
-          fixed md:relative z-50 md:z-auto h-full
-          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
-        `}
-      >
-        {/* Section 1 — Logo */}
-        <div className="bg-white rounded-full shadow-sm border border-slate-100 px-3 py-3 flex-shrink-0">
-          <div
-            className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'justify-center' : ''}`}
-          >
-            <img
-              src={Logo}
-              alt="Logo"
-              className="w-10 h-10 rounded-xl object-cover flex-shrink-0 shadow-sm"
-            />
-            {!isCollapsed && (
-              <div className="overflow-hidden">
-                <p className="text-sm font-bold text-[#1a1a1e] truncate leading-tight">
-                  Keluarga Pekong
-                </p>
-                <p className="text-[10px] text-slate-400 truncate">Admin Panel</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Section 2 — Navigation */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex-1 overflow-y-auto">
-          <nav className="py-3 px-2">
-            <ul className="space-y-1">
-              {navItems.map((item) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <li key={item.path}>
-                    <Link
-                      to={item.path}
-                      onClick={() => setIsMobileOpen(false)}
-                      className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative ${
-                        isCollapsed ? 'justify-center' : ''
-                      } ${
-                        isActive
-                          ? 'bg-[#1a1a1e] text-white shadow-lg shadow-[#1a1a1e]/20'
-                          : 'text-slate-500 hover:bg-[#f5f3f2] hover:text-[#1a1a1e]'
-                      }`}
-                      title={isCollapsed ? item.label : undefined}
-                    >
-                      <span className="flex-shrink-0">{item.icon}</span>
-                      {!isCollapsed && (
-                        <span className="text-sm font-medium truncate">{item.label}</span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-        </div>
-
-        {/* Section 3 — Toggle + Logout */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-2 py-3 space-y-1 flex-shrink-0">
-          {/* Collapse/Expand toggle */}
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-[#f5f3f2] hover:text-[#1a1a1e] transition-all duration-200 ${
-              isCollapsed ? 'justify-center' : ''
-            }`}
-            title={isCollapsed ? 'Buka sidebar' : 'Tutup sidebar'}
-          >
-            <svg
-              className="w-5 h-5 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              {isCollapsed ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 19l-7-7 7-7M19 19l-7-7 7-7"
-                />
-              )}
-            </svg>
-            {!isCollapsed && <span className="text-sm font-medium">Tutup</span>}
-          </button>
-
-          {/* Logout */}
-          <button
-            onClick={handleLogoutClick}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all duration-200 ${
-              isCollapsed ? 'justify-center' : ''
-            }`}
-            title={isCollapsed ? 'Logout' : undefined}
-          >
-            <svg
-              className="w-5 h-5 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-            {!isCollapsed && <span className="text-sm font-medium">Logout</span>}
-          </button>
-        </div>
-      </aside>
+      <Sidebar
+        variant="admin"
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+        navItems={navItems}
+      />
 
       {/* ============ MAIN AREA (Top Bar + Content) ============ */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -871,8 +797,10 @@ export default function AdminLayout() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto">
-          <Outlet />
+        <main className="flex-1 overflow-auto" ref={mainRef}>
+          <div>
+            <Outlet />
+          </div>
         </main>
       </div>
 

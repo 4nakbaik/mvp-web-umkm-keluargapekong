@@ -1,16 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../hooks/useAuthStore';
 import { useSearchStore } from '../hooks/useSearchStore';
+import { useCartStore } from '../hooks/useCartStore';
 import ProfileDropdown from './ProfileDropdown';
-import Logo from '../assets/Logo.png';
 import { getImageUrl } from '../utils/imageHelper';
+import Logo from '../assets/Logo.png';
 
 export default function Navbar() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { query, setQuery, products } = useSearchStore();
+  const { getItemCount } = useCartStore();
+  const navigate = useNavigate();
   const [searchFocused, setSearchFocused] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   const formatPrice = (price: number) =>
@@ -40,182 +44,183 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Scroll listener for navbar shadow
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const scrollToProduct = (productId: string) => {
     setShowResults(false);
     setTimeout(() => {
       const el = document.getElementById(`product-${productId}`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('ring-2', 'ring-[#91AC8F]', 'ring-offset-2');
+        el.classList.add('ring-2', 'ring-[#747878]', 'ring-offset-2');
         setTimeout(() => {
-          el.classList.remove('ring-2', 'ring-[#91AC8F]', 'ring-offset-2');
+          el.classList.remove('ring-2', 'ring-[#747878]', 'ring-offset-2');
         }, 1500);
       }
     }, 100);
   };
 
   return (
-    <nav className="bg-white shadow-[0_2px_16px_rgba(75,89,69,0.06)] px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center sticky top-0 z-50 transition-shadow duration-300">
-      {/* Logo */}
-      <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-        <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-white border-2 border-[#91AC8F]/40 transition-all duration-300 group-hover:border-[#91AC8F] group-hover:shadow-md">
-          <img
-            src={Logo}
-            alt="RM Pekong Logo"
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-          />
-        </div>
-        <h1 className="text-lg font-bold text-[#4B5945] tracking-wide transition-colors duration-200 group-hover:text-[#66785F] hidden sm:block">
+    <header
+      id="top-nav"
+      className={`fixed top-0 w-full z-50 flex justify-between items-center px-5 md:px-16 max-w-[1440px] mx-auto left-0 right-0 glass-nav border-b border-[#c4c7c7]/20 transition-all duration-300 ${
+        scrolled ? 'shadow-md py-3' : 'py-4'
+      }`}
+    >
+      {/* Logo / Brand */}
+      <Link to="/" className="flex items-center gap-2 shrink-0">
+        <img src={Logo} alt="RM Pekong Logo" className="w-13 h-13 object-contain shrink-0" />
+        <span className="font-['Epilogue'] text-[32px] leading-[1.3] font-semibold tracking-tight text-[#4a4a4a] cursor-pointer">
           PEKONGFAM
-        </h1>
+        </span>
       </Link>
 
-      {/* Search Bar */}
-      <div ref={searchRef} className="flex-1 max-w-lg mx-4 sm:mx-6 relative">
-        <div
-          className={`relative w-full transition-all duration-300 ${
-            searchFocused ? 'scale-[1.02]' : ''
-          }`}
-        >
-          <svg
-            className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-200 ${
-              searchFocused ? 'text-[#66785F]' : 'text-[#4B5945]/35'
+      {/* Spacer */}
+      <div className="hidden md:flex flex-1 justify-center" />
+
+      {/* Right side: Search + Auth */}
+      <div className="flex items-center gap-4">
+        {/* Expandable Search */}
+        <div ref={searchRef} className="relative flex items-center">
+          <div
+            className={`flex items-center bg-[#f0eded] rounded-full transition-all duration-300 overflow-hidden border border-[#c4c7c7]/30 ${
+              searchFocused ? 'w-64' : 'w-10 hover:w-64'
             }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setShowResults(true);
-            }}
-            onFocus={() => {
-              setSearchFocused(true);
-              if (query.trim()) setShowResults(true);
-            }}
-            onBlur={() => setSearchFocused(false)}
-            placeholder="Cari menu favorit..."
-            className={`w-full pl-10 pr-10 py-2.5 rounded-full text-sm text-[#4B5945] placeholder-[#4B5945]/35 border-2 transition-all duration-300 outline-none ${
-              searchFocused
-                ? 'border-[#91AC8F] shadow-[0_0_0_3px_rgba(145,172,143,0.15)] bg-white'
-                : 'border-[#4B5945]/10 bg-[#f5f8f4] hover:border-[#91AC8F]/50'
-            }`}
-          />
-          {query && (
-            <button
-              onClick={() => {
-                setQuery('');
-                setShowResults(false);
-              }}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#4B5945]/35 hover:text-[#4B5945] transition-colors cursor-pointer"
+            <div
+              className="flex items-center justify-center w-10 h-10 shrink-0 cursor-pointer text-[#444748]"
+              onClick={() => setSearchFocused(true)}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+              <span className="material-symbols-outlined text-[20px]">search</span>
+            </div>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setShowResults(true);
+              }}
+              onFocus={() => {
+                setSearchFocused(true);
+                if (query.trim()) setShowResults(true);
+              }}
+              onBlur={() => setSearchFocused(false)}
+              placeholder="Search menu..."
+              className="bg-transparent border-none focus:ring-0 font-['Inter'] text-base leading-[1.6] text-[#1c1b1b] w-0 group-hover:w-full pr-4 transition-all duration-300 outline-none flex-1"
+            />
+          </div>
+
+          {/* Search Results Dropdown */}
+          {showResults && query.trim() && (
+            <div className="animate-slide-down absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-[#c4c7c7]/30 overflow-hidden z-50 min-w-[280px]">
+              {matchedProducts.length > 0 ? (
+                <div className="py-2 max-h-80 overflow-y-auto">
+                  {matchedProducts.map((product, i) => (
+                    <button
+                      key={product.id}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        scrollToProduct(product.id);
+                      }}
+                      className="animate-stagger-in w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#f6f3f2] transition-colors cursor-pointer text-left"
+                      style={{ animationDelay: `${i * 40}ms` }}
+                    >
+                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#f0eded] shrink-0">
+                        {product.imageUrl ? (
+                          <img
+                            src={getImageUrl(product.imageUrl)!}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).parentElement!.innerHTML =
+                                '<div class="w-full h-full flex items-center justify-center text-xs">🍽</div>';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#4a4a4a]/20 text-xs">
+                            🍽
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[#1c1b1b] truncate font-['Epilogue']">
+                          {product.name}
+                        </p>
+                        <p className="text-xs text-[#5d5f5d] font-['Inter']">
+                          {formatPrice(product.price)} • {product.category}
+                        </p>
+                      </div>
+                      <svg
+                        className="w-4 h-4 text-[#c4c7c7] shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-4 py-6 text-center">
+                  <p className="text-sm text-[#5d5f5d]/60 font-['Inter']">
+                    Tidak ada produk untuk "{query}"
+                  </p>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
-        {/* Search Results Dropdown */}
-        {showResults && query.trim() && (
-          <div className="animate-slide-down absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-[#4B5945]/5 overflow-hidden z-50">
-            {matchedProducts.length > 0 ? (
-              <div className="py-2 max-h-80 overflow-y-auto">
-                {matchedProducts.map((product, i) => (
-                  <button
-                    key={product.id}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      scrollToProduct(product.id);
-                    }}
-                    className="animate-stagger-in w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#f0f5ee] transition-colors cursor-pointer text-left"
-                    style={{ animationDelay: `${i * 40}ms` }}
-                  >
-                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#f0f5ee] shrink-0">
-                      {product.imageUrl ? (
-                        <img
-                          src={getImageUrl(product.imageUrl)!}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                            (e.target as HTMLImageElement).parentElement!.innerHTML =
-                              '<div class="w-full h-full flex items-center justify-center text-xs">🍽</div>';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[#4B5945]/20 text-xs">
-                          🍽
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-[#4B5945] truncate">
-                        {product.name}
-                      </p>
-                      <p className="text-xs text-[#66785F]">
-                        {formatPrice(product.price)} • {product.category}
-                      </p>
-                    </div>
-                    <svg
-                      className="w-4 h-4 text-[#B2C9AD] shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="px-4 py-6 text-center">
-                <p className="text-sm text-[#66785F]/60">Tidak ada produk untuk "{query}"</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        {/* Cart Icon (STAFF only) + Auth Buttons */}
+        <div className="flex items-center gap-2">
+          {/* Cart icon — only visible for logged-in STAFF */}
+          {isAuthenticated && (user?.role === 'STAFF' || user?.role === 'ADMIN') && (
+            <button
+              onClick={() => navigate('/staff/cart')}
+              className="relative p-2 rounded-lg hover:bg-[#f0eded] transition-colors cursor-pointer"
+              title="Keranjang"
+            >
+              <span className="material-symbols-outlined text-[22px] text-[#1c1b1b]">shopping_cart</span>
+              {getItemCount() > 0 && (
+                <span className="cart-badge-bounce absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1 leading-none">
+                  {getItemCount() > 99 ? '99+' : getItemCount()}
+                </span>
+              )}
+            </button>
+          )}
 
-      {/* Auth */}
-      <div className="flex gap-2 items-center shrink-0">
-        {isAuthenticated ? (
-          <ProfileDropdown />
-        ) : (
-          <>
-            <Link to="/register">
-              <button className="interactive-btn px-4 py-2 text-sm font-semibold text-[#4B5945] bg-transparent border-2 border-[#91AC8F]/50 rounded-lg hover:bg-[#f0f5ee] hover:border-[#91AC8F] cursor-pointer">
-                Register
-              </button>
-            </Link>
-            <Link to="/login">
-              <button className="interactive-btn px-4 py-2 text-sm font-semibold text-white bg-[#4B5945] rounded-lg hover:bg-[#66785F] cursor-pointer shadow-sm hover:shadow-md">
-                Login
-              </button>
-            </Link>
-          </>
-        )}
+          {isAuthenticated ? (
+            <ProfileDropdown />
+          ) : (
+            <>
+              <Link to="/register">
+                <button className="px-4 py-2 rounded-lg border border-[#c4c7c7] text-[#1c1b1b] font-['Inter'] text-base hover:bg-[#f0eded] transition-colors cursor-pointer">
+                  Register
+                </button>
+              </Link>
+              <Link to="/login">
+                <button className="bg-[#4a4a4a] text-white px-6 py-2 rounded-lg font-['Inter'] text-base hover:opacity-90 transition-opacity cursor-pointer">
+                  Login
+                </button>
+              </Link>
+            </>
+          )}
+        </div>
       </div>
-    </nav>
+    </header>
   );
 }

@@ -75,13 +75,13 @@ export const useAuthStore = create<AuthState>()(
         // Validate
         const state = get();
         if (password.length > 0 && password.length < 8) {
-          set({ passwordError: 'Password harus minimal 8 karakter' });
+          set({ passwordError: 'Kata sandi harus minimal 8 karakter' });
         } else {
           set({ passwordError: null });
         }
 
         if (state.confirmPassword && password !== state.confirmPassword) {
-          set({ confirmPasswordError: 'Password tidak cocok' });
+          set({ confirmPasswordError: 'Kata sandi tidak cocok' });
         } else if (state.confirmPassword) {
           set({ confirmPasswordError: null });
         }
@@ -90,7 +90,7 @@ export const useAuthStore = create<AuthState>()(
         set({ confirmPassword });
         const { password } = get();
         if (confirmPassword !== password) {
-          set({ confirmPasswordError: 'Password tidak cocok' });
+          set({ confirmPasswordError: 'Kata sandi tidak cocok' });
         } else {
           set({ confirmPasswordError: null });
         }
@@ -99,17 +99,17 @@ export const useAuthStore = create<AuthState>()(
 
       // Validation actions
       validatePassword: (password: string): boolean => {
-        if (password.length < 8) {
-          set({ passwordError: 'Password harus minimal 8 karakter' });
-          return false;
-        }
-        set({ passwordError: null });
-        return true;
-      },
+          if (password.length < 8) {
+            set({ passwordError: 'Kata sandi harus minimal 8 karakter' });
+            return false;
+          }
+          set({ passwordError: null });
+          return true;
+        },
 
       validateConfirmPassword: (password: string, confirmPassword: string): boolean => {
         if (password !== confirmPassword) {
-          set({ confirmPasswordError: 'Password tidak cocok' });
+          set({ confirmPasswordError: 'Kata sandi tidak cocok' });
           return false;
         }
         set({ confirmPasswordError: null });
@@ -180,7 +180,15 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        isAdmin: state.isAdmin,
       }),
+      merge: (persistedState: any, currentState) => {
+        return {
+          ...currentState,
+          ...persistedState,
+          isAdmin: persistedState?.user?.role === 'ADMIN' || persistedState?.isAdmin || false,
+        };
+      },
     }
   )
 );

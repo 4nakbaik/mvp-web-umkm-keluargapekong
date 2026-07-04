@@ -28,7 +28,7 @@ export default function ProtectedRoute({
 
   // Jika memerlukan admin tapi user bukan admin
   if (requireAdmin && !isAdmin) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   // Jika memerlukan staff tapi user bukan staff

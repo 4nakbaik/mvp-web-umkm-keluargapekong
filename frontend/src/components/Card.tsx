@@ -1,24 +1,27 @@
 import { useState } from 'react';
 import { getImageUrl } from '../utils/imageHelper';
+import { useAuthStore } from '../hooks/useAuthStore';
 
 interface CardProps {
   id?: string;
   name: string;
   description: string | null;
   price: number;
+  stock?: number;
   imageUrl: string | null;
   category: string;
+  featured?: boolean;
+  onAddToCart?: () => void;
 }
 
-export function Card({ id, name, description, price, imageUrl, category }: CardProps) {
+export function Card({ id, name, description, price, imageUrl, category, featured = false, onAddToCart }: CardProps) {
   const [imgError, setImgError] = useState(false);
+  const { isAuthenticated, user } = useAuthStore();
+  const isStaff = isAuthenticated && (user?.role === 'STAFF' || user?.role === 'ADMIN');
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(price);
+    const inK = Math.round(price / 1000);
+    return `RP ${inK}K`;
   };
 
   // Category badge label
@@ -33,33 +36,24 @@ export function Card({ id, name, description, price, imageUrl, category }: CardP
     return labels[cat] || cat;
   };
 
-  // Pseudo-random rating from product name
-  const charSum = name.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
-  const rating = (3.8 + (charSum % 14) / 10).toFixed(1);
-
-  // Engineered fake "original" price (higher than real price)
-  const discountPercent = 10 + (charSum % 4) * 10; // 10%, 20%, 30%, or 40%
-  const fakeOriginalPrice = Math.ceil(price / (1 - discountPercent / 100) / 1000) * 1000;
-
-  // Delivery time (varied)
-  const deliveryMin = 15 + (charSum % 4) * 5; // 15, 20, 25, 30
-
   return (
-    <div
+    <article
       id={id ? `product-${id}` : undefined}
-      className="interactive-card w-full bg-white rounded-2xl overflow-hidden border border-[#4B5945]/8 cursor-pointer transition-all duration-300"
+      className={`bg-white rounded-xl overflow-hidden smooth-shadow hover-lift group flex flex-col ${
+        featured ? 'md:flex-row md:col-span-2 md:min-h-[280px]' : ''
+      } h-full border border-[#c4c7c7]/10 transition-all duration-300`}
     >
-      {/* Image Section */}
-      <div className="relative h-44 sm:h-48 overflow-hidden bg-[#f0f5ee]">
+      {/* Image */}
+      <div className={`relative ${featured ? 'w-full md:w-[45%] h-[200px] md:h-full shrink-0' : 'aspect-[4/3]'} overflow-hidden bg-[#f0eded]`}>
         {imageUrl && !imgError ? (
           <img
             src={getImageUrl(imageUrl)!}
             alt={name}
-            className="card-img-zoom w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[#4B5945]/25">
+          <div className="w-full h-full flex items-center justify-center text-[#4a4a4a]/25">
             <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -70,67 +64,57 @@ export function Card({ id, name, description, price, imageUrl, category }: CardP
             </svg>
           </div>
         )}
-
-        {/* Rating badge */}
-        <span className="absolute top-3 right-3 flex items-center gap-1 bg-[#5f755e] text-white text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0">
-          <svg className="w-3 h-3 text-[#f59e0b]" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-          {rating}
-        </span>
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        {/* Title row */}
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="text-[15px] font-bold text-[#4B5945] line-clamp-1 flex-1">{name}</h3>
+      <div className={`p-6 flex flex-col flex-grow ${featured ? 'md:p-8 justify-between' : 'justify-between'}`}>
+        <div>
+          {/* Featured Badge */}
+          {featured && (
+            <span className="font-['JetBrains_Mono'] text-[10px] tracking-[0.15em] font-semibold text-[#8b7355] bg-[#8b7355]/10 px-2 py-0.5 rounded-sm uppercase mb-2.5 inline-block">
+              Local Favorite
+            </span>
+          )}
+
+          {/* Title + Price row */}
+          <div className={`flex ${featured ? 'flex-col md:flex-row md:items-start md:justify-between' : 'justify-between items-start'} mb-2`}>
+            <h3 className={`font-['Epilogue'] ${featured ? 'text-2xl md:text-3xl' : 'text-2xl'} leading-[1.3] font-semibold text-[#1c1b1b] line-clamp-2 flex-1 mr-2`}>
+              {name}
+            </h3>
+            {!featured && (
+              <span className="font-['JetBrains_Mono'] text-xs tracking-[0.1em] font-medium text-[#4a4a4a] bg-[#f0eded] px-2 py-1 rounded-sm shrink-0">
+                {formatPrice(price)}
+              </span>
+            )}
+          </div>
+
+          {/* Standalone Price for Featured */}
+          {featured && (
+            <p className="font-['JetBrains_Mono'] text-lg font-semibold text-[#1c1b1b] mt-1 mb-3">
+              {formatPrice(price)}
+            </p>
+          )}
+
+          {/* Description */}
+          <p className={`font-['Inter'] text-base leading-[1.6] text-[#5d5f5d] ${featured ? 'mb-6 line-clamp-3 md:line-clamp-4' : 'mb-6 line-clamp-2'} flex-grow`}>
+            {description || getCategoryLabel(category)}
+          </p>
         </div>
 
-        {/* Description / Category */}
-        <p className="text-xs text-[#66785F] line-clamp-1 mb-3">
-          {description || getCategoryLabel(category)}
-        </p>
-
-        {/* Price row — fake original (strikethrough) + real price (highlighted) */}
-        <div className="flex items-center gap-2 mb-2.5">
-          <span className="text-[13px] text-[#66785F]/50 line-through">
-            {formatPrice(fakeOriginalPrice)}
-          </span>
-          <span className="text-[15px] font-bold text-[#4B5945]">{formatPrice(price)}</span>
-          <span className="text-[11px] font-semibold text-[#4B5945] bg-[#B2C9AD]/40 px-1.5 py-0.5 rounded">
-            {discountPercent}% OFF
-          </span>
-        </div>
-
-        {/* Delivery info */}
-        <div className="flex items-center gap-1.5 text-[12px] text-[#66785F] mb-2.5">
-          <svg
-            className="w-3.5 h-3.5 text-[#91AC8F]"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        {/* Add to Cart button */}
+        {isStaff && (
+          <button
+            onClick={onAddToCart}
+            className={`py-3 rounded-lg border border-[#c4c7c7] text-[#1c1b1b] font-['Inter'] text-base hover:bg-[#f0eded] transition-colors flex items-center justify-center gap-2 cursor-pointer ${
+              featured ? 'w-full md:w-auto md:px-8' : 'w-full'
+            }`}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span className="font-medium">{deliveryMin} min</span>
-        </div>
-
-        {/* Discount badge line */}
-        <div className="flex items-center gap-1.5 text-[12px]">
-          <span className="w-4 h-4 flex items-center justify-center rounded-full bg-[#4B5945] text-white text-[8px] font-bold shrink-0">
-            %
-          </span>
-          <span className="text-[#4B5945] font-semibold">
-            Hemat {formatPrice(fakeOriginalPrice - price)}
-          </span>
-        </div>
+            <span className="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+            Add to Cart
+          </button>
+        )}
       </div>
-    </div>
+    </article>
   );
 }
+

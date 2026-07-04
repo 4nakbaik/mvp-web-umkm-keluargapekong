@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api } from '../../service/api';
-import { useCartStore } from '../../hooks/useCartStore';
-import { useToastStore } from '../../hooks/useToastStore';
 import { getImageUrl } from '../../utils/imageHelper';
 
 interface Product {
@@ -16,13 +13,9 @@ interface Product {
 }
 
 export default function StaffProducts() {
-  const navigate = useNavigate();
-  const { addToast } = useToastStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState('all');
-
-  const { addItem, getItemCount } = useCartStore();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,27 +70,8 @@ export default function StaffProducts() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">Produk</h1>
-          <p className="text-slate-500 mt-1">Pilih produk untuk membuat pesanan</p>
+          <p className="text-slate-500 mt-1">Daftar produk yang tersedia dalam sistem kasir</p>
         </div>
-        <button
-          onClick={() => navigate('/staff/cart')}
-          className="relative flex items-center gap-2 px-6 py-3 bg-[#5c4033] text-white font-semibold rounded hover:bg-[#4a3329] transition-all duration-200 shadow-lg shadow-[#5c4033]/25"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-            />
-          </svg>
-          Keranjang
-          {getItemCount() > 0 && (
-            <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-              {getItemCount()}
-            </span>
-          )}
-        </button>
       </div>
 
       {/* Category Filter */}
@@ -192,35 +166,6 @@ export default function StaffProducts() {
                   )}
                   <div className="flex items-center justify-between">
                     <p className="font-bold text-[#5c4033]">{formatPrice(product.price)}</p>
-                    <button
-                      onClick={() => {
-                        const success = addItem({
-                          id: product.id,
-                          name: product.name,
-                          price: product.price,
-                          imageUrl: product.imageUrl,
-                          stock: product.stock,
-                        });
-                        if (!success) {
-                          addToast('Stok tidak mencukupi', 'error');
-                        }
-                      }}
-                      className="p-2 bg-[#ded9d6] text-[#5c4033] rounded hover:bg-[#cec6c2] transition-colors active:scale-90 active:bg-[#bcaaa4] duration-150"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                    </button>
                   </div>
                   <p className="text-xs text-slate-400 mt-2">Stok: {product.stock}</p>
                 </div>

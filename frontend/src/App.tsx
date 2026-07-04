@@ -2,7 +2,6 @@ import { Routes, Route } from 'react-router-dom';
 import Login from './page/Login';
 import Register from './page/Register';
 import Homepage from './page/Homepage';
-import AdminLogin from './page/admin/AdminLogin';
 import AdminLayout from './components/admin/AdminLayout';
 import Dashboard from './page/admin/Dashboard';
 import Products from './page/admin/Products';
@@ -20,7 +19,7 @@ import ToastContainer from './components/ToastContainer';
 
 function App() {
   return (
-    <div className="h-screen">
+    <div className="min-h-screen">
       <ToastContainer />
       <Routes>
         <Route path="/" element={<Homepage />} />
@@ -38,8 +37,7 @@ function App() {
         </Route>
 
         {/* Admin Routes - Protected dengan double layer security */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route element={<ProtectedRoute requireAdmin redirectTo="/admin/login" />}>
+        <Route element={<ProtectedRoute requireAdmin redirectTo="/login" />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="analytics" element={<Analytics />} />

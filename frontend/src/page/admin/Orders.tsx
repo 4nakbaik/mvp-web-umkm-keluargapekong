@@ -256,7 +256,7 @@ export default function Orders() {
                       value={order.status}
                       onClick={(e) => e.stopPropagation()}
                       onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
-                      disabled={updatingId === order.id}
+                      disabled={updatingId === order.id || order.status !== 'PENDING'}
                       className="appearance-none pl-3 pr-8 py-2 text-sm border border-[#c8c8cc] rounded focus:ring-2 focus:ring-[#6e6e73] focus:border-[#6e6e73] outline-none bg-white text-[#1a1a1e] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {statusOptions.map((opt) => (
